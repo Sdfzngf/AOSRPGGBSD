@@ -1,15 +1,11 @@
 module;
 
 #include <cassert>
-#include <cstring>
 #include <memory>
 #include <unordered_map>
-#include <utility>
 #include <shared_mutex>
-#include <mutex>
-#include <fstream>
-#include <format>
 #include <sys/stat.h>
+#include <functional>
 
 export module Engine.Utils.Data.DataManager;
 
@@ -31,7 +27,6 @@ export namespace Engine {
             private:
                 std::unordered_map<std::string, std::shared_ptr<DataEntry>> Data;
                 mutable std::shared_mutex mtx;
-
             public:
                 int InsertEntry(const std::string& key, std::shared_ptr<DataEntry> entry);
 
@@ -39,9 +34,11 @@ export namespace Engine {
 
                 bool RemoveEntry(const std::string& key);
 
-                int MountDB_memory(const std::shared_ptr<uint8_t[]> mem);
+                template<bool EnableCallback=false>
+                int MountDB_memory(const std::shared_ptr<uint8_t[]> mem,std::function<void(std::string,float)> progresscallback=0);
 
-                int MountDB(std::string path);
+                template<bool EnableCallback=false>
+                int MountDB(std::string path,std::function<void(std::string,float)> progresscallback=0);
             };
         }
     }
