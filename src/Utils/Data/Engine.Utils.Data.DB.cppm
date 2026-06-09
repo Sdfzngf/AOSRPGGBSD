@@ -46,6 +46,13 @@ export namespace Engine {
                     return 0;
                 }
             };
+
+            struct DB_DataEntry_Header {
+                uint8_t  NameSize{0};//名称大小
+                uint32_t Size{0};//大小
+                uint32_t Type{0};//类型
+                //Data//数据：包含名称与真正的数据
+            };
         }
     }
 }

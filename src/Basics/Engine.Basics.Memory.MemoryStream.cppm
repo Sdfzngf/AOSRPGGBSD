@@ -3,6 +3,7 @@ module;
 #include <cstdint>
 #include <cstring>
 #include <type_traits>
+#include <memory>
 
 export module Engine.Basics.Memory.MemoryStream;
 
@@ -15,14 +16,18 @@ export namespace Engine {
                 FAIL=2,
                 EMPTY=3
             };
+            struct MemoryBlock{
+                std::shared_ptr<uint8_t[]> block;
+                uint64_t size;
+            };
 
             /**
-             * @brief 不线程安全的内存流
+             * @brief 线程不安全的内存流
              *
              */
             class MemoryStream{
             private:
-                uint8_t* buffer=nullptr;
+                std::shared_ptr<uint8_t[]> buffer=nullptr;
                 uint64_t pointer=0;
                 uint64_t buffersize=0;
                 StreamStat stat=StreamStat::EMPTY;
@@ -51,12 +56,15 @@ export namespace Engine {
                     return 0;
                 }
             public:
-                MemoryStream(uint8_t* buffer,uint64_t buffersize){
+                MemoryStream(std::shared_ptr<uint8_t[]> buffer,uint64_t buffersize){
                     this->buffer=buffer;
                     this->buffersize=buffersize;
                     stat=StreamStat::GOOD;
                 }
-                MemoryStream(){
+                MemoryStream(MemoryBlock block){
+                    this->buffer=block.block;
+                    this->buffersize=block.size;
+                    stat=StreamStat::GOOD;
                 }
 
                 MemoryStream(const MemoryStream&) = delete;
@@ -68,7 +76,11 @@ export namespace Engine {
                     unsigned int rightsize=0;
                     if constexpr (std::is_same_v<const char*, T>){
                         rightsize=strlen(right);
-                    }else {
+                    }else if constexpr (std::is_same_v<MemoryBlock, T>){
+                        rightsize=right.size;
+                    }else if constexpr (std::is_same_v<std::shared_ptr<uint8_t[]>,T>){
+                        static_assert(false, "不要用来操作智能指针");
+                    } else{
                         rightsize=sizeof(right);
                     }
 
@@ -76,9 +88,11 @@ export namespace Engine {
                     if(result!=0)return result;
 
                     if constexpr (std::is_pointer_v<T>) {
-                        memcpy(buffer+pointer,right,rightsize);
+                        memcpy(buffer.get()+pointer,right,rightsize);
+                    }else if constexpr (std::is_same_v<MemoryBlock, T>) {
+                        memcpy(buffer.get()+pointer,right.block.get(),rightsize);
                     }else{
-                        memcpy(buffer+pointer,&right,rightsize);
+                        memcpy(buffer.get()+pointer,&right,rightsize);
                     }
                     pointer+=rightsize;
                     if(pointer==buffersize)stat=StreamStat::EOFF;
@@ -87,15 +101,25 @@ export namespace Engine {
 
                 template<typename T>
                 int operator>>(T right){
+                    unsigned int rightsize=0;
                     if constexpr (std::is_pointer_v<T>) {
                         static_assert(false, ">>不支持指针类型");
+                    } else if constexpr (std::is_same_v<std::shared_ptr<uint8_t[]>,T>){
+                        static_assert(false, "不要用来操作智能指针");
+                    } else if constexpr (std::is_same_v<MemoryBlock, T>) {
+                        rightsize=right.size;
+                    } else{
+                        rightsize=sizeof(right);
                     }
-                    unsigned int rightsize=sizeof(right);
 
                     int result=CheckStat(rightsize);
                     if(result!=0)return result;
 
-                    memcpy(&right,buffer+pointer,rightsize);
+                    if constexpr (std::is_same_v<MemoryBlock, T>){
+                        memcpy(right.block.get(),buffer.get()+pointer,rightsize);
+                    } else {
+                        memcpy(&right,buffer.get()+pointer,rightsize);
+                    }
                     if(pointer==buffersize)stat=StreamStat::EOFF;
                     return 0;
                 }

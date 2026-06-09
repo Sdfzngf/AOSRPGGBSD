@@ -27,18 +27,31 @@ export namespace Engine {
              * 
              */
             struct DataEntry {
+                std::atomic<std::shared_ptr<const std::string>> Name{nullptr};//名称
                 std::atomic<uint32_t> Size{0};//大小
                 std::atomic<uint32_t> Type{0};//类型
-                std::atomic<uint8_t>  NameSize{0};//名称大小
-                std::atomic<std::shared_ptr<const std::string>> Name{nullptr};//名称
                 std::atomic<std::shared_ptr<uint8_t[]>> Data;//数据
                 mutable std::shared_mutex DataMutex;//锁
+
+                DataEntry(){
+                }
+
+                DataEntry(const std::string& name,const uint32_t size,const uint32_t type,const std::shared_ptr<uint8_t[]> data){
+                    SetName(name);
+                    Size=size;
+                    Type=type;
+                    Data=data;
+                }
+
+                void SetData(std::shared_ptr<uint8_t[]> data){
+                    std::unique_lock lock(DataMutex);
+                    Data.store(data);
+                }
 
                 //设置名称
                 void SetName(const std::string& name){
                     std::unique_lock lock(DataMutex);
                     Name.store(std::make_shared<std::string>(name));
-                    NameSize=static_cast<uint8_t>(name.size());
                 }
                 // 设置数据
                 void New(uint32_t size){

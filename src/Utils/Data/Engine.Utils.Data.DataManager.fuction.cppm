@@ -5,6 +5,7 @@
 module;
 
 #include <cassert>
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <unordered_map>
@@ -23,6 +24,7 @@ progresscallback(a,b);\
 module Engine.Utils.Data.DataManager:fuctions;
 
 import Engine.Utils.Data.DataManager;
+import Engine.Basics.Memory.MemoryStream;
 
 export namespace Engine {
     namespace Utils {
@@ -79,11 +81,12 @@ export namespace Engine {
             template<bool EnableCallback=false>
             int DataManager::MountDB_memory(const std::shared_ptr<uint8_t[]> mem,std::function<void(std::string,float)> progresscallback,size_t buffsize){
                 std::unique_lock<std::shared_mutex> lock(mtx);
+
                 ccb(std::string(locale("尝试读取DB_Header")),0);
-                std::span<char> buffer_span((char*)mem.get(),buffsize);
-                std::spanstream membuff(buffer_span);
                 DB_Header header;
-                throw "本函数不完整";
+                Engine::Basics::Memory::MemoryStream ms(mem,buffsize);
+                ms>>header;
+
                 switch (header.version){
                     case __version:
                         break;
@@ -95,13 +98,21 @@ export namespace Engine {
                 }
                 try{
                     /**
-                     * @brief 循环读取条目，条目的存储格式如下：
-                     *       |entry.NameSize|entry.Name|entry.Type|entry.Size|entry.Data|
+                     * @brief 循环读取条目
+                     *
                      */
                     for (int i=0;i<header.numberOfEntrys;i++){
                         ccb(std::format(locale("正在加载数据条目 {} / {}"),i+1,header.numberOfEntrys),float(i+1)/header.numberOfEntrys*100);
-                        std::shared_ptr<DataEntry> entry=std::make_shared<DataEntry>();
-                        
+                        DB_DataEntry_Header entryheader;
+                        ms>>entryheader;
+                        std::shared_ptr<uint8_t[]> namep=std::make_shared<uint8_t[]>(entryheader.NameSize);
+                        std::shared_ptr<uint8_t[]> datap=std::make_shared<uint8_t[]>(entryheader.Size);
+                        Engine::Basics::Memory::MemoryBlock name{.block=namep,.size=entryheader.NameSize};
+                        Engine::Basics::Memory::MemoryBlock data{.block=datap,.size=entryheader.Size};
+                        ms>>name;
+                        ms>>data;
+                        std::string name_s=std::string((const char*)namep.get());
+                        InsertEntry(name_s, std::make_shared<DataEntry>(new DataEntry(name_s,data.size,entryheader.Type,data.block)));
                     }
                 }catch(...){
                     Log(std::string(locale("加载数据库时发生错误，可能是由于内存中的数据格式不正确导致的")));
