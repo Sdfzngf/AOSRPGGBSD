@@ -1,3 +1,7 @@
+/**
+ * @brief 数据管理器模块，注释内容较多，建议查看函数实现部分的注释
+ * 
+ */
 module;
 
 #include <cassert>
@@ -21,11 +25,17 @@ using Engine::Utils::Data::DB_Header;
 export namespace Engine {
     namespace Utils {
         namespace Data {
+            /**
+             * @brief 当前DB版本号
+             * 
+             */
             const uint8_t __version=1;
 
             class DataManager {
             private:
+                //数据条目容器
                 std::unordered_map<std::string, std::shared_ptr<DataEntry>> Data;
+                //读写锁
                 mutable std::shared_mutex mtx;
             public:
                 int InsertEntry(const std::string& key, std::shared_ptr<DataEntry> entry);

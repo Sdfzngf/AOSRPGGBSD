@@ -1,3 +1,7 @@
+/**
+ * @brief 内存操作模块
+ * 
+ */
 module;
 
 #include <cstdint>

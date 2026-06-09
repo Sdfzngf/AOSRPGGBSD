@@ -1,3 +1,7 @@
+/**
+ * @brief 数据条目类
+ * 
+ */
 module;
 
 #include <cassert>
@@ -18,13 +22,17 @@ import Engine.Utils.Data.DataEntry.EntryType;
 export namespace Engine {
     namespace Utils {
         namespace Data {
+            /**
+             * @brief 数据条目结构，包含数据的大小、类型、名称和数据本体等信息，并提供线程安全的读写访问接口
+             * 
+             */
             struct DataEntry {
-                std::atomic<uint32_t> Size{0};
-                std::atomic<uint32_t> Type{0};
-                std::atomic<uint8_t>  NameSize{0};
-                std::atomic<std::shared_ptr<const std::string>> Name{nullptr};
-                std::atomic<std::shared_ptr<uint8_t[]>> Data;
-                mutable std::shared_mutex DataMutex;
+                std::atomic<uint32_t> Size{0};//大小
+                std::atomic<uint32_t> Type{0};//类型
+                std::atomic<uint8_t>  NameSize{0};//名称大小
+                std::atomic<std::shared_ptr<const std::string>> Name{nullptr};//名称
+                std::atomic<std::shared_ptr<uint8_t[]>> Data;//数据
+                mutable std::shared_mutex DataMutex;//锁
                 // 设置数据
                 void New(uint32_t size){
                     std::unique_lock lock(DataMutex);
@@ -57,7 +65,11 @@ export namespace Engine {
                     return Size.load();
                 }
             };
-
+            
+            /**
+             * @brief 压力一个Entry?!!
+             * 
+             */
             void __test_entry(){
                 Engine::Utils::Data::DataEntry ent;
                 ent.Size=sizeof(Engine::Utils::Data::DB_Header);

@@ -1,3 +1,7 @@
+/**
+ * @brief 日志记录器
+ * 
+ */
 module;
 
 #include <iostream>
@@ -47,29 +51,70 @@ export namespace Engine {
                     break;\
             }
 
+            /**
+             * @brief 记录日志
+             * 
+             * @param content 日志内容
+             * @param loglevel 日志等级
+             * @param end 结束符，默认为换行符
+             * @return int 看心情的返回值
+             */
             int Log(std::string content, const Engine::Utils::Logger::LogLevel loglevel=Engine::Utils::Logger::LogLevel::DEBUG, char end='\n') {
                 __log_pref();
                 printf("%s\033[0m%c",content.c_str(),end);
                 return 0;
             }
+
+            /**
+             * @brief 记录日志
+             * 
+             * @param content 日志内容
+             * @param loglevel 日志等级
+             * @param end 结束符，默认为换行符
+             * @return int 看心情的返回值
+             */
             int Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel=Engine::Utils::Logger::LogLevel::DEBUG, char end='\n') {
                 __log_pref();
                 printf("%s\033[0m%c",content,end);
                 return 0;
             }
-            //如果你好奇为什么要用callback
-            //答案是如果要用Log(std::format(locale("abcd: {}"),efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
+
+            /**
+             * @brief 回调函数版本的Log
+             * 
+             * @param callcallback 返回日志内容的回调函数
+             * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(std::format(locale("abcd: {}"),efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
+             * @param end 结束符，默认为换行符
+             * @return int 看心情的返回值
+             */
             int Log(std::string(*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel=Engine::Utils::Logger::LogLevel::DEBUG, char end='\n') {
                 __log_pref();
                 printf("%s\033[0m%c",callcallback().c_str(),end);
                 return 0;
             }
+
+            /**
+             * @brief 回调函数版本的Log
+             * 
+             * @param callcallback 返回日志内容的回调函数
+             * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(std::format(locale("abcd: {}"),efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
+             * @param end 结束符，默认为换行符
+             * @return int 看心情的返回值
+             */
             int Log(const char*(*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel=Engine::Utils::Logger::LogLevel::DEBUG, char end='\n') {
                 __log_pref();
                 printf("%s\033[0m%c",callcallback(),end);
                 return 0;
             }
 
+            /**
+             * @brief 回调函数版本的Log，但是更通用了一些
+             * 
+             * @param callcallback 返回日志内容的回调函数
+             * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(std::format(locale("abcd: {}"),efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
+             * @param end 结束符，默认为换行符
+             * @return int 看心情的返回值
+             */
             template <typename T>
             int Log(T callcallback, const Engine::Utils::Logger::LogLevel loglevel=Engine::Utils::Logger::LogLevel::DEBUG, char end='\n') {
                 __log_pref();
@@ -78,13 +123,17 @@ export namespace Engine {
                 return 0;
             }
 
-            //void Log(std::string&&) = delete("复制这个然后用类似格式的blabla替换掉就不会报错了[](){return std::format(locale(\"111: {}\"),1);}");
 
             int LogHex(){
                 //我待会再来写这个
                 return 0;
             }
 
+            /**
+             * @brief 测试日志等级显示和时间显示的函数
+             * 
+             * @return int 
+             */
             int __loglevel_test__() {
                 std::cout << Engine::Utils::Time::GetAppRunningTime() << "test\n";
                 Log("Ciallo", Engine::Utils::Logger::LogLevel::WTF);
@@ -97,6 +146,11 @@ export namespace Engine {
                 return 114514;
             }
 
+            /**
+             * @brief 压力一个函数？！
+             * 
+             * @return int 
+             */
             int __logger_stress_test(){
                 Log("int __logger_stress_test()");
                 constexpr int lp=6;

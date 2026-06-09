@@ -1,3 +1,7 @@
+/**
+ * @brief 国际化模块
+ * 
+ */
 module;
 
 #include <string>

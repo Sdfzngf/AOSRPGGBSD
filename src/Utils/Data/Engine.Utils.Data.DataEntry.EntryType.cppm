@@ -1,3 +1,7 @@
+/**
+ * @brief 数据条目类型枚举，看不懂诗人我吃
+ * 
+ */
 module;
 
 export module Engine.Utils.Data.DataEntry.EntryType;
