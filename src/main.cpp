@@ -7,6 +7,8 @@ import Engine.Utils.Data.DataManager;
 import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Data.DB;
 import Engine.Game;
+import Engine.Basics.Memory.MemoryStream;
+import Engine.Basics.Memory;
 
 Engine::Utils::Data::DataManager GameDM;
 Engine::Game g;
@@ -22,4 +24,29 @@ int main() {
     g.StartUp();
     g.MainLoop();
     g.ShutDown();
+    // int sz=64;
+    // uint8_t* block=new uint8_t[sz];
+    // Engine::Basics::Memory::MemoryStream ms(block,sz);
+    // Engine::Basics::Memory::dump_hex(block,sz);
+    //
+    // Engine::Utils::Logger::Log("ibb", Engine::Utils::Logger::LogLevel::DEBUG);
+    // ms<<"NMSL";
+    // Engine::Basics::Memory::dump_hex(block,sz);
+    //
+    // Engine::Utils::Logger::Log("ibb", Engine::Utils::Logger::LogLevel::DEBUG);
+    // ms<<"123456789)10";
+    // Engine::Basics::Memory::dump_hex(block,sz);
+    //
+    // struct test{
+    //     char a='H';
+    //     int v=114514;
+    //     char b='c';
+    // };
+    // test a;
+    // ms<<a;
+    // ms.SetPointer(16);
+    // test b;
+    // ms>>b;
+    // Engine::Basics::Memory::dump_hex(block,sz);
+    // Engine::Utils::Logger::Log(std::format("{},{},{}",b.a,b.v,b.b), Engine::Utils::Logger::LogLevel::DEBUG);
 }

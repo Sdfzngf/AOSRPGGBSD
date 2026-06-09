@@ -45,7 +45,7 @@ export namespace Engine {
                 bool RemoveEntry(const std::string& key);
 
                 template<bool EnableCallback=false>
-                int MountDB_memory(const std::shared_ptr<uint8_t[]> mem,std::function<void(std::string,float)> progresscallback=0);
+                int MountDB_memory(const std::shared_ptr<uint8_t[]> mem,std::function<void(std::string,float)> progresscallback=0,size_t buffsize=0);
 
                 template<bool EnableCallback=false>
                 int MountDB(std::string path,std::function<void(std::string,float)> progresscallback=0);

@@ -24,6 +24,7 @@ target_sources(AOSRPGGBSD
         PRIVATE
                 FILE_SET CXX_MODULES
                 FILES src/Basics/Engine.Basics.Memory.cppm
+                FILES src/Basics/Engine.Basics.Memory.MemoryStream.cppm
                 FILES src/Utils/Engine.Utils.Time.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.cppm
