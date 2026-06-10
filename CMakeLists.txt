@@ -25,13 +25,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
-# Debug 模式下：无优化，保留完整调试符号
+
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
-# 确保 C 语言也保持一致
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Force SDL3 static build when fetched by CPM
 set(SDL_SHARED OFF CACHE BOOL "Build SDL shared library" FORCE)
 set(SDL_STATIC ON CACHE BOOL "Build SDL static library" FORCE)
 set(SDL_TESTS OFF CACHE BOOL "Build SDL tests" FORCE)
