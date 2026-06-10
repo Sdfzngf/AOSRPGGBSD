@@ -45,7 +45,7 @@ export namespace Engine {
                         default:
                             break;
                     }
-                    if (pointer+rightsize>=buffersize){
+                    if (pointer+rightsize>buffersize){
                         stat=StreamStat::EOFF;
                         return 3;
                     }
@@ -100,7 +100,7 @@ export namespace Engine {
                 }
 
                 template<typename T>
-                int operator>>(T right){
+                int operator>>(T& right){
                     unsigned int rightsize=0;
                     if constexpr (std::is_pointer_v<T>) {
                         static_assert(false, ">>不支持指针类型");
@@ -120,7 +120,9 @@ export namespace Engine {
                     } else {
                         memcpy(&right,buffer.get()+pointer,rightsize);
                     }
+                    pointer+=rightsize;
                     if(pointer==buffersize)stat=StreamStat::EOFF;
+                    else stat=StreamStat::GOOD;
                     return 0;
                 }
 
@@ -135,6 +137,12 @@ export namespace Engine {
                         default:
                             break;
                     }
+                    this->pointer=pointer;
+                    if(this->pointer>buffersize){
+                        stat=StreamStat::EOFF;
+                        return 3;
+                    }
+                    stat=this->pointer==buffersize ? StreamStat::EOFF : StreamStat::GOOD;
                     return 0;
                 }
 

@@ -11,14 +11,20 @@ set(CMAKE_CXX_COMPILER "clang++")
 project(AOSRPGGBSD VERSION 0.1.0 LANGUAGES C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+# Debug 模式下：无优化，保留完整调试符号
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
+# 确保 C 语言也保持一致
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(AOSRPGGBSD
         src/main.cpp
 )
 
-target_compile_definitions(AOSRPGGBSD PRIVATE NDEBUG)
+#target_compile_definitions(AOSRPGGBSD PRIVATE NDEBUG)
 
 target_sources(AOSRPGGBSD
         PRIVATE
@@ -44,7 +50,7 @@ target_sources(AOSRPGGBSD
 )
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
-target_link_libraries(AOSRPGGBSD ${LIBS})
+#target_link_libraries(AOSRPGGBSD ${LIBS})
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

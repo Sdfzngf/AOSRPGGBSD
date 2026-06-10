@@ -26,6 +26,7 @@ import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Data.DB;
 import Engine.i18n;
 import Engine.Basics.Memory.MemoryStream;
+import Engine.Basics.Memory;
 
 using Engine::Utils::Logger::Log;
 using Engine::i18n::locale;
@@ -64,14 +65,16 @@ export namespace Engine {
                  * @return int 返回值
                  */
                 template<bool EnableCallback=false>
-                int MountDB_memory(const std::shared_ptr<uint8_t[]> mem,std::function<void(std::string,float)> progresscallback=0,size_t buffsize=0){
+                int MountDB_memory(const std::shared_ptr<uint8_t[]> mem,size_t buffsize,std::function<void(std::string,float)> progresscallback=0){
                     std::unique_lock<std::shared_mutex> lock(mtx);
 
                     ccb(std::string(locale("尝试读取DB_Header")),0);
+                    Log([](){return std::string(locale("尝试读取DB_Header"));});
                     DB_Header header;
                     Engine::Basics::Memory::MemoryStream ms(mem,buffsize);
                     ms>>header;
-
+                    Engine::Basics::Memory::dump_hex((uint8_t*)&header,sizeof(header));
+                    Log([&header,&buffsize](){return std::format("DB_Header::numberOfEntrys={},buffsize={}",header.numberOfEntrys,buffsize);});
                     switch (header.version){
                         case __version:
                             break;
@@ -96,8 +99,9 @@ export namespace Engine {
                             Engine::Basics::Memory::MemoryBlock data{.block=datap,.size=entryheader.Size};
                             ms>>name;
                             ms>>data;
-                            std::string name_s=std::string((const char*)namep.get());
-                            InsertEntry(name_s, std::make_shared<DataEntry>(new DataEntry(name_s,data.size,entryheader.Type,data.block)));
+                            std::string name_s(reinterpret_cast<const char*>(namep.get()), entryheader.NameSize);
+                            Log([&name_s,&i,&header](){return std::format(locale("加载数据条目\"{}\"，进度 {} / {}"),name_s,i+1,header.numberOfEntrys);});
+                            Data[name_s] = std::make_shared<DataEntry>(name_s,data.size,entryheader.Type,data.block);
                         }
                     }catch(...){
                         Log(std::string(locale("加载数据库时发生错误，可能是由于内存中的数据格式不正确导致的")));
@@ -105,6 +109,7 @@ export namespace Engine {
                         return 3;
                     }
                     ccb(std::string(locale("加载完成")),100);
+                    Log([](){return std::string(locale("加载完成"));});
                     return 0;
                 }
 
@@ -119,10 +124,12 @@ export namespace Engine {
                 template<bool EnableCallback=false>
                 int MountDB(std::string path,std::function<void(std::string,float)> progresscallback=0){
                     ccb(std::format(locale("尝试将文件 \"{}\" 加载到内存"),path),0);
+                    Log([&path](){return std::format(locale("尝试将文件 \"{}\" 加载到内存"),path);});
                     std::ifstream file;
                     file.open(path,std::ifstream::binary);
                     if(!file){
                         Log([path](){return std::format(locale("无法打开文件\"{}\""),path);});
+                        ccb(std::format(locale("无法打开文件\"{}\""),path),0);
                         return 1;
                     }
                     struct stat statbuf;
@@ -131,8 +138,9 @@ export namespace Engine {
                     std::shared_ptr<uint8_t[]> mem = std::make_shared<uint8_t[]>(statbuf.st_size);
                     file.read((char*)mem.get(), statbuf.st_size);
                     ccb(std::format(locale("成功将文件 \"{}\" 加载到内存"),path),10);
+                    Log([&path](){return std::format(locale("成功将文件 \"{}\" 加载到内存"),path);});
                     file.close();
-                    return MountDB_memory<EnableCallback>(mem,progresscallback);
+                    return MountDB_memory<EnableCallback>(mem,statbuf.st_size,progresscallback);
                 }
 
                 /**
@@ -146,14 +154,16 @@ export namespace Engine {
                 template<bool EnableCallback=false>
                 int SaveDB(std::string path,std::string desc,std::function<void(std::string,float)> progresscallback=0){
                     std::unique_lock<std::shared_mutex> lock(mtx);
-                    ccb("尝试保存当前数据库",1);
+                    ccb(std::string(locale("尝试保存当前数据库")),1);
                     std::fstream file(path,std::ios::binary|std::ios::out|std::ios::trunc);
                     if(!file){
+                        ccb(std::format(locale("无法打开文件\"{}\""),path),1);
                         Log([path](){return std::format(locale("无法打开文件\"{}\""),path);});
                         return 1;
                     }
                     DB_Header dbh;
                     if (desc.length()>=503){
+                        ccb(std::format(locale("DB文件的描述过长\"{}\""),path),1);
                         Log([path](){return std::format(locale("DB文件的描述过长\"{}\""),path);});
                         return 2;
                     }
@@ -177,6 +187,7 @@ export namespace Engine {
                     }
                     file.close();
                     ccb(std::string(locale("保存完成")),100);
+                    Log([](){return std::string(locale("保存完成"));});
                     return 0;
                 }
             };
