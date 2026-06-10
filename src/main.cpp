@@ -9,6 +9,11 @@ import Engine.Utils.Data.DB;
 import Engine.Game;
 import Engine.Basics.Memory.MemoryStream;
 import Engine.Basics.Memory;
+import Engine.Utils.Data.DataEntry.EntryType;
+
+#include <memory>
+#include <cstdint>
+#include <format>
 
 Engine::Utils::Data::DataManager GameDM;
 Engine::Game g;
@@ -24,29 +29,13 @@ int main() {
     g.StartUp();
     g.MainLoop();
     g.ShutDown();
-    // int sz=64;
-    // uint8_t* block=new uint8_t[sz];
-    // Engine::Basics::Memory::MemoryStream ms(block,sz);
-    // Engine::Basics::Memory::dump_hex(block,sz);
-    //
-    // Engine::Utils::Logger::Log("ibb", Engine::Utils::Logger::LogLevel::DEBUG);
-    // ms<<"NMSL";
-    // Engine::Basics::Memory::dump_hex(block,sz);
-    //
-    // Engine::Utils::Logger::Log("ibb", Engine::Utils::Logger::LogLevel::DEBUG);
-    // ms<<"123456789)10";
-    // Engine::Basics::Memory::dump_hex(block,sz);
-    //
-    // struct test{
-    //     char a='H';
-    //     int v=114514;
-    //     char b='c';
-    // };
-    // test a;
-    // ms<<a;
-    // ms.SetPointer(16);
-    // test b;
-    // ms>>b;
-    // Engine::Basics::Memory::dump_hex(block,sz);
-    // Engine::Utils::Logger::Log(std::format("{},{},{}",b.a,b.v,b.b), Engine::Utils::Logger::LogLevel::DEBUG);
+    std::shared_ptr<Engine::Utils::Data::DataEntry> enn(new Engine::Utils::Data::DataEntry("test1",16,static_cast<uint32_t>(Engine::Utils::Data::EntryType::Binary),std::make_shared<uint8_t[]>(16)));
+    enn.get()->Write([](std::shared_ptr<uint8_t[]> data) {
+        Engine::Basics::Memory::MemoryStream ms(data,16);
+        ms<<"abcdefghijklmno";
+    });
+    GameDM.InsertEntry(enn);
+    GameDM.SaveDB("./a.db", "NMSL", [](std::string text,float prog){
+         Engine::Utils::Logger::Log(std::format("{},,{}",text,prog), Engine::Utils::Logger::LogLevel::DEBUG);
+    });
 }

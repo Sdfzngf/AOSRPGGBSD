@@ -18,6 +18,7 @@ import Engine.Basics.Memory;
 import Engine.Utils.Logger;
 import Engine.Utils.Data.DB;
 import Engine.Utils.Data.DataEntry.EntryType;
+import Engine.Basics.Memory.MemoryStream;
 
 export namespace Engine {
     namespace Utils {
@@ -67,7 +68,7 @@ export namespace Engine {
                     if (!dataPtr) {
                         throw std::runtime_error("Engine::Utils::Data::DataEntry::Read(F&& func)::dataPtr: Nullptr");
                     }
-                    return func(dataPtr.get(),this);
+                    return func(dataPtr);
                 }
 
                 // 读写访问回调（独占锁）
@@ -78,7 +79,7 @@ export namespace Engine {
                     if (!dataPtr) {
                         throw std::runtime_error("Engine::Utils::Data::DataEntry::Write(F&& func)::dataPtr: Nullptr");
                     }
-                    return func(dataPtr.get(),this);
+                    return func(dataPtr);
                 }
 
                 uint32_t GetSize() const {
@@ -95,14 +96,14 @@ export namespace Engine {
                 ent.Size=sizeof(Engine::Utils::Data::DB_Header);
                 auto sz=ent.GetSize();
                 ent.New(sizeof(Engine::Utils::Data::DB_Header));
-                ent.Write([](uint8_t* data,const Engine::Utils::Data::DataEntry* entry) {
+                ent.Write([](std::shared_ptr<uint8_t[]> data) {
                     Engine::Utils::Data::DB_Header* a=new Engine::Utils::Data::DB_Header();
                     a->SetDesc("NMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLNMSLSB", 503);
                     a->SetDesc("a", 2,false);
-                    memcpy(data, a, sizeof(Engine::Utils::Data::DB_Header));
+                    memcpy(data.get(), a, sizeof(Engine::Utils::Data::DB_Header));
                 });
-                ent.Read([sz](uint8_t* data,const Engine::Utils::Data::DataEntry* entry) {
-                    Engine::Basics::Memory::dump_hex(data,sizeof(Engine::Utils::Data::DB_Header));
+                ent.Read([sz](std::shared_ptr<uint8_t[]> data) {
+                    Engine::Basics::Memory::dump_hex(data.get(),sizeof(Engine::Utils::Data::DB_Header));
                 });
             }
         }
