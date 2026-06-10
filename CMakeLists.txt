@@ -10,6 +10,17 @@ set(CMAKE_CXX_COMPILER "clang++")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3")
 project(AOSRPGGBSD VERSION 0.1.0 LANGUAGES C CXX)
 
+# Bootstrap CPM.cmake
+set(CPM_DOWNLOAD_VERSION 0.40.7)
+set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
+if(NOT EXISTS ${CPM_DOWNLOAD_LOCATION})
+        file(DOWNLOAD
+                https://github.com/cpm-cmake/CPM.cmake/releases/download/v${CPM_DOWNLOAD_VERSION}/CPM.cmake
+                ${CPM_DOWNLOAD_LOCATION}
+        )
+endif()
+include(${CPM_DOWNLOAD_LOCATION})
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
@@ -19,6 +30,25 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g")
 # 确保 C 语言也保持一致
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# Force SDL3 static build when fetched by CPM
+set(SDL_SHARED OFF CACHE BOOL "Build SDL shared library" FORCE)
+set(SDL_STATIC ON CACHE BOOL "Build SDL static library" FORCE)
+set(SDL_TESTS OFF CACHE BOOL "Build SDL tests" FORCE)
+
+CPMAddPackage(
+        NAME SDL3
+        GITHUB_REPOSITORY libsdl-org/SDL
+        GIT_TAG release-3.4.10
+        OPTIONS
+                "SDL_SHARED OFF"
+                "SDL_STATIC ON"
+                "SDL_TESTS OFF"
+)
+
+if(NOT TARGET SDL3::SDL3-static)
+        message(FATAL_ERROR "SDL3 static target SDL3::SDL3-static is unavailable")
+endif()
 
 add_executable(AOSRPGGBSD
         src/main.cpp
@@ -51,6 +81,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
