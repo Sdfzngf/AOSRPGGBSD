@@ -1,6 +1,6 @@
 /**
  * @brief 启动！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
- * 
+ *
  */
 module;
 
@@ -12,7 +12,8 @@ import Engine.Utils.Logger;
 using Engine::Utils::Logger::Log;
 
 export namespace Engine {
-    void Engine::Game::StartUp(){
-        Log("void Engine::Game::StartUp()");
-    }
+void Engine::Game::StartUp()
+{
+    Log("void Engine::Game::StartUp()");
+}
 }

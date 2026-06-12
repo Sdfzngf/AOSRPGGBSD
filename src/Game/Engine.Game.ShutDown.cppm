@@ -1,6 +1,6 @@
 /**
  * @brief 关闭游戏
- * 
+ *
  */
 module;
 
@@ -12,7 +12,8 @@ import Engine.Utils.Logger;
 using Engine::Utils::Logger::Log;
 
 export namespace Engine {
-    void Engine::Game::ShutDown(){
-        Log("void Engine::Game::ShutDown()");
-    }
+void Engine::Game::ShutDown()
+{
+    Log("void Engine::Game::ShutDown()");
+}
 }

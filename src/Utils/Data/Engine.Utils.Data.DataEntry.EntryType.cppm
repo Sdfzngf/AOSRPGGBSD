@@ -1,20 +1,18 @@
 /**
  * @brief 数据条目类型枚举，看不懂诗人我吃
- * 
+ *
  */
 module;
 
+#include <cstdint>
+
 export module Engine.Utils.Data.DataEntry.EntryType;
 
-export namespace Engine {
-    namespace Utils {
-        namespace Data {
-            enum class EntryType{
-                Binary=0,
-                String=1,
-                List=2,
-                Script=3
-            };
-        }
-    }
+export namespace Engine::Engine::Utils::Data {
+enum class EntryType : uint8_t {
+    Binary = 0,
+    String = 1,
+    List = 2,
+    Script = 3
+};
 }
