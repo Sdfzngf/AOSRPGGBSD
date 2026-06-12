@@ -39,6 +39,7 @@ CPMAddPackage(
         GITHUB_REPOSITORY libsdl-org/SDL
         GIT_TAG release-3.4.10
         OPTIONS
+                "CMAKE_EXPORT_COMPILE_COMMANDS OFF"
                 "SDL_SHARED OFF"
                 "SDL_STATIC ON"
                 "SDL_TESTS OFF"
