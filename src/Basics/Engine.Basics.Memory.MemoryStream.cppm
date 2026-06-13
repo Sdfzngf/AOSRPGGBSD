@@ -1,3 +1,7 @@
+/**
+ * @brief 内存流
+ *
+ */
 module;
 
 #include <cstdint>
@@ -8,15 +12,19 @@ module;
 export module Engine.Basics.Memory.MemoryStream;
 
 export namespace Engine::Basics::Memory {
+
+// 内存流状态
 enum class StreamStat : uint8_t {
     GOOD = 0,
     EOFF = 1,
     FAIL = 2,
-    EMPTY = 3
+    EMPTY = 3 // 如果内存流未初始化
 };
+
+// 内存块
 struct MemoryBlock {
-    std::shared_ptr<uint8_t[]> block;
-    uint64_t size;
+    std::shared_ptr<uint8_t[]> block; // 内存块
+    uint64_t size; // 内存块大小
 };
 
 /**
@@ -25,10 +33,15 @@ struct MemoryBlock {
  */
 class MemoryStream {
 private:
-    std::shared_ptr<uint8_t[]> buffer = nullptr;
-    uint64_t pointer = 0;
-    uint64_t buffersize = 0;
-    StreamStat stat = StreamStat::EMPTY;
+    std::shared_ptr<uint8_t[]> buffer = nullptr; // 指向缓冲区的智能指针
+    uint64_t pointer = 0; // 指针位置
+    uint64_t buffersize = 0; // 缓冲区大小
+    StreamStat stat = StreamStat::EMPTY; // 状态
+
+    /**
+     * @brief 检查状态
+     * @param rightsize 右值大小
+     */
     auto CheckStat(unsigned int rightsize) -> int
     {
         switch (stat) {

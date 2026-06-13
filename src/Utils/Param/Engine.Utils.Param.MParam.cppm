@@ -1,3 +1,7 @@
+/**
+ * @brief Engine.Utils.Param.MParam.cppm，程序命令行参数的结构体。
+ *
+ */
 module;
 
 export module Engine.Utils.Param.MParam;
