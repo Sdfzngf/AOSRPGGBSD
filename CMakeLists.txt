@@ -64,6 +64,9 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.cppm
 
+                FILES src/Utils/Param/Engine.Utils.Param.MParam.cppm
+                FILES src/Utils/Param/Engine.Utils.Param.Format.cppm
+
                 FILES src/i18n/Engine.i18n.cppm
 
                 FILES src/Utils/Data/Engine.Utils.Data.DB.cppm

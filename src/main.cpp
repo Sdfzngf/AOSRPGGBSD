@@ -10,19 +10,20 @@ import Engine.Game;
 import Engine.Basics.Memory.MemoryStream;
 import Engine.Basics.Memory;
 import Engine.Utils.Data.DataEntry.EntryType;
-
-#include <cstdint>
-#include <memory>
+import Engine.Utils.Param.Format;
+import Engine.Utils.Param.MParam;
 
 Engine::Utils::Data::DataManager GameDM;
 Engine::Game g;
+
+#include <format>
 
 /**
  * @brief main函数
  *
  * @return int 默认是0,但程序真正的返回值在Game::ShutDown()里
  */
-auto main() -> int // NOLINT
+auto main(const int argc, const char* argv[], const char* envp[]) -> int // NOLINT
 {
     Engine::Utils::Logger::Log("int main()", Engine::Utils::Logger::LogLevel::DEBUG);
     g.StartUp();
@@ -44,11 +45,11 @@ auto main() -> int // NOLINT
     // GameDM.SaveDB<true>("./a.db", "NMSL苏安地方不勤务部白求恩妇科权威恢复iqh", [](std::string text,float prog){
     //      Engine::Utils::Logger::Log(std::format("{},,{}",text,prog), Engine::Utils::Logger::LogLevel::DEBUG);
     // });
-    GameDM.MountDB("./a.db");
-    GameDM.GetEntry("yuanshen").get()->Read([](const std::shared_ptr<uint8_t[]>& data) -> void {
-        Engine::Utils::Logger::Log(std::string(reinterpret_cast<const char*>(data.get())));
-    });
-    GameDM.GetEntry("nishigay").get()->Read([](const std::shared_ptr<uint8_t[]>& data) -> void {
-        Engine::Utils::Logger::Log(std::string(reinterpret_cast<const char*>(data.get())));
-    });
+    // GameDM.MountDB("./a.db");
+    // GameDM.GetEntry("yuanshen").get()->Read([](const std::shared_ptr<uint8_t[]>& data) -> void {
+    //     Engine::Utils::Logger::Log(std::string(reinterpret_cast<const char*>(data.get())));
+    // });
+    // GameDM.GetEntry("nishigay").get()->Read([](const std::shared_ptr<uint8_t[]>& data) -> void {
+    //     Engine::Utils::Logger::Log(std::string(reinterpret_cast<const char*>(data.get())));
+    // });
 }
