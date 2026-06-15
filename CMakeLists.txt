@@ -66,6 +66,7 @@ target_sources(AOSRPGGBSD
 
                 FILES src/i18n/Engine.i18n.cppm
 
+                FILES src/Utils/Arguments/Engine.Utils.Arg.Actions.cppm
                 FILES src/Utils/Arguments/Engine.Utils.Arg.MArg.cppm
                 FILES src/Utils/Arguments/Engine.Utils.Arg.Format.cppm
 
@@ -73,6 +74,9 @@ target_sources(AOSRPGGBSD
                 FILES src/GUI/OpenCL/Engine.GUI.OpenCL.cppm
                 FILES src/GUI/SDL/Engine.GUI.SDL.cppm
                 FILES src/GUI/Engine.GUI.GUIManager.cppm
+
+                FILES src/Utils/DevConsole/Engine.Utils.DevConsole.MainAct.cppm
+                FILES src/Utils/DevConsole/Engine.Utils.DevConsole.cppm
 
                 FILES src/Utils/Data/Engine.Utils.Data.DB.cppm
                 FILES src/Utils/Data/Engine.Utils.Data.DataEntry.EntryType.cppm
