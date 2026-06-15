@@ -66,8 +66,8 @@ target_sources(AOSRPGGBSD
 
                 FILES src/i18n/Engine.i18n.cppm
 
-                FILES src/Utils/Param/Engine.Utils.Param.MParam.cppm
-                FILES src/Utils/Param/Engine.Utils.Param.Format.cppm
+                FILES src/Utils/Arguments/Engine.Utils.Arg.MArg.cppm
+                FILES src/Utils/Arguments/Engine.Utils.Arg.Format.cppm
 
                 FILES src/GUI/LDRM/Engine.GUI.LDRM.cppm
                 FILES src/GUI/OpenCL/Engine.GUI.OpenCL.cppm
