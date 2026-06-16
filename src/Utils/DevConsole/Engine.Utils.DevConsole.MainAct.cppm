@@ -4,13 +4,19 @@
  */
 module;
 
+#include <format>
 #include <iostream>
+#include <print>
 #include <string>
 
 module Engine.Utils.DevConsole:MainAct;
 
 import Engine.Utils.Arg.MArg;
 import Engine.Utils.Logger;
+import Engine.i18n;
+
+using Engine::i18n::locale;
+using Engine::Utils::Logger::Log;
 
 export namespace Engine::Utils {
 class DevConsole {
@@ -24,9 +30,12 @@ public:
         while (std::cin >> tmp) {
             cmd += tmp;
             if (std::cin.get() == '\n') {
-                std::cout << cmd << '\n';
                 if (cmd == "exit") {
                     return 0;
+                } else if (cmd == "help") {
+                    std::print("NO HELP FOR YOU!\n");
+                } else {
+                    Log([&cmd]() -> std::string { return std::format(locale("未知的命令: {}"), cmd); }, Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL);
                 }
                 cmd = "";
                 std::cout << "DEV>>> ";

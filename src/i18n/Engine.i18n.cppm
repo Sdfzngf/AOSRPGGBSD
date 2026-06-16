@@ -5,6 +5,7 @@
 module;
 
 #include <string>
+#include <string_view>
 
 export module Engine.i18n;
 
