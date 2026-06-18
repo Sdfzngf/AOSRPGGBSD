@@ -9,6 +9,7 @@ export module Engine.Utils.DevConsole;
 import Engine.Utils.Arg.MArg;
 
 export namespace Engine::Utils {
+extern const char* helpmsg;
 class DevConsole {
 public:
     static auto MainAct(Engine::Utils::Arg::MArg mp) -> int;

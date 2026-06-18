@@ -49,6 +49,18 @@ if(NOT TARGET SDL3::SDL3-static)
         message(FATAL_ERROR "SDL3 static target SDL3::SDL3-static is unavailable")
 endif()
 
+CPMAddPackage(
+        NAME replxx
+        GITHUB_REPOSITORY AmokHuginnsson/replxx
+        GIT_TAG release-0.0.4
+        OPTIONS
+                "BUILD_SHARED_LIBS OFF"
+)
+
+if(NOT TARGET replxx)
+        message(FATAL_ERROR "replxx target is unavailable")
+endif()
+
 add_executable(AOSRPGGBSD
         src/main.cpp
 )
@@ -92,7 +104,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static replxx)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
