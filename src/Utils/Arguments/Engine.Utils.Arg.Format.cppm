@@ -20,16 +20,13 @@ import Engine.i18n;
 // 反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射
 
 export namespace Engine::Utils::Arg {
-class Actions {
-public:
-    static auto Get() -> const std::unordered_map<std::string, std::function<void(Engine::Utils::Arg::MArg&)>>&;
-};
+extern const std::unordered_map<std::string, std::function<void(Engine::Utils::Arg::MArg&)>>& arg_actions;
 // 将命令行参数转为数组
 auto FormatParam(const int argc, const char* argv[], const char* envp[]) -> MArg
 {
     MArg Mp;
     for (int i : std::views::iota(1, argc)) {
-        if (auto it = Actions::Get().find(argv[i]); it != Actions::Get().end()) {
+        if (auto it = arg_actions.find(argv[i]); it != arg_actions.end()) {
             it->second(Mp);
         } else {
             Engine::Utils::Logger::Log(std::format(Engine::i18n::locale("Unknown Argument \"{}\""), argv[i]), Engine::Utils::Logger::LogLevel::WARN);
