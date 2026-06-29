@@ -23,9 +23,13 @@ using Engine::Utils::Logger::Log;
 export namespace Engine::Utils {
 // 支持引号的简易解析
 constexpr const char* helpmsg = "AOSRPGGBSD v0.1\n"
-                                "    console     进入交互式终端\n"
+                                "命令行参数:\n"
+                                "    console     进入交互式控制台\n"
                                 "    help        输出本条信息\n"
-                                "    exit        退出交互式终端\n"
+                                "控制台参数:\n"
+                                "    help        获取帮助信息\n"
+                                "    listde      输出当前已加载的资源条目\n"
+                                "    exit        退出交互式控制台\n"
                                 "\n";
 
 class DevConsole {

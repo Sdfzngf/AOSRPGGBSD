@@ -15,10 +15,6 @@ import Engine.Utils.Arg.MArg;
 import Engine.Utils.Logger;
 import Engine.i18n;
 
-// 靠北啦clang什么时候能支持反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射
-// 反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射
-// 反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射反射
-
 export namespace Engine::Utils::Arg {
 extern const std::unordered_map<std::string, std::function<void(Engine::Utils::Arg::MArg&)>>& arg_actions;
 // 将命令行参数转为数组
@@ -29,7 +25,7 @@ auto FormatParam(const int argc, const char* argv[], const char* envp[]) -> MArg
         if (auto it = arg_actions.find(argv[i]); it != arg_actions.end()) {
             it->second(Mp);
         } else {
-            Engine::Utils::Logger::Log(std::format(Engine::i18n::locale("Unknown Argument \"{}\""), argv[i]), Engine::Utils::Logger::LogLevel::WARN);
+            Engine::Utils::Logger::Log(std::format(Engine::i18n::locale("未知参数 \"{}\""), argv[i]), Engine::Utils::Logger::LogLevel::WARN);
         }
     }
     return Mp;
