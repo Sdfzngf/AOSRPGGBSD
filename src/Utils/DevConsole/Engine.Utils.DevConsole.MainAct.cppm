@@ -5,8 +5,23 @@
 module;
 
 #include <format>
+#include <fstream>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <functional>
+#include <sstream>
+#include <algorithm>
+#include <iomanip>
+
+import Engine.Basics.TextUtils;
+
+using Engine::Basics::TextUtils::kMaxShowBytes;
+using Engine::Basics::TextUtils::kHexSummaryBytes;
+using Engine::Basics::TextUtils::IsLikelyUtf8;
+using Engine::Basics::TextUtils::IsMostlyPrintable;
+using Engine::Basics::TextUtils::TypeNameFromIndex;
+using Engine::Basics::TextUtils::TypeColorFromIndex;
 
 // 引入 replxx 头文件
 #include <replxx.hxx>
@@ -16,24 +31,86 @@ export module Engine.Utils.DevConsole:MainAct;
 import Engine.Utils.Arg.MArg;
 import Engine.Utils.Logger;
 import Engine.i18n;
+import Engine.Utils.Data.DataManager;
+import Engine.Utils.Data.DataEntry;
 
 using Engine::i18n::locale;
 using Engine::Utils::Logger::Log;
 
+Engine::Utils::Data::DataManager ddm;
+
 export namespace Engine::Utils {
-// 支持引号的简易解析
+
 constexpr const char* helpmsg = "AOSRPGGBSD v0.1\n"
                                 "命令行参数:\n"
                                 "    console     进入交互式控制台\n"
                                 "    help        输出本条信息\n"
                                 "控制台参数:\n"
                                 "    help        获取帮助信息\n"
+                                "    add         添加条目: add <name> <data> [type]\n"
+                                "                或 add <name> --file <path> [type]\n"
                                 "    listde      输出当前已加载的资源条目\n"
+                                "    show        显示条目内容: show <name>\n"
+                                "    rm          删除条目: rm <name>\n"
+                                "    load        加载数据库: load <path>\n"
+                                "    savedb      保存数据库: savedb <path> [desc]\n"
                                 "    exit        退出交互式控制台\n"
                                 "\n";
 
 class DevConsole {
 public:
+    /**
+     * @brief 将条目类型文本解析为内部类型编号。
+     * @param typeText 类型文本或数字编号。
+     * @return 对应的类型编号，未识别时默认返回 String 类型。
+     */
+    static auto ParseEntryType(const std::string& typeText) -> uint32_t
+    {
+        if (typeText == "0" || typeText == "binary" || typeText == "Binary")
+            return 0;
+        if (typeText == "1" || typeText == "string" || typeText == "String")
+            return 1;
+        if (typeText == "2" || typeText == "list" || typeText == "List")
+            return 2;
+        if (typeText == "3" || typeText == "script" || typeText == "Script")
+            return 3;
+        return 1;
+    }
+
+    /**
+     * @brief 从文件读取原始字节。
+     * @param path 文件路径。
+     * @return 成功时返回包含文件内容的缓冲区；失败时返回 nullptr。
+     */
+    static auto LoadFileBytes(const std::string& path) -> std::shared_ptr<uint8_t[]>
+    {
+        std::ifstream file(path, std::ios::binary);
+        if (!file) {
+            return nullptr;
+        }
+
+        file.seekg(0, std::ios::end);
+        const auto fileSize = file.tellg();
+        if (fileSize < 0) {
+            return nullptr;
+        }
+        file.seekg(0, std::ios::beg);
+
+        auto buffer = std::make_shared<uint8_t[]>(static_cast<size_t>(fileSize));
+        if (fileSize > 0) {
+            file.read(reinterpret_cast<char*>(buffer.get()), fileSize);
+            if (!file) {
+                return nullptr;
+            }
+        }
+        return buffer;
+    }
+
+    /**
+     * @brief 解析控制台输入行。
+     * @param line 原始输入行。
+     * @return 解析后的参数列表。
+     */
     static auto parseCommandLine(const std::string& line) -> std::vector<std::string>
     {
         std::vector<std::string> args;
@@ -56,6 +133,11 @@ public:
         }
         return args;
     }
+    /**
+     * @brief 启动开发者控制台主循环。
+     * @param mp 解析后的命令行参数。
+     * @return 程序退出码。
+     */
     static auto MainAct(Engine::Utils::Arg::MArg mp) -> int
     {
         Logger::Log("DevConsole::MainAct()", Logger::LogLevel::DEBUG);
@@ -70,6 +152,151 @@ public:
         };
         handlers["exit"] = [&](const auto& args) -> void {
             exitRequested = true;
+        };
+        handlers["listde"] = [&](const auto& args) -> void {
+            for (auto& i : ddm.GetList()) {
+                replxx.print("%s\n", i.c_str()); // NOLINT
+            }
+        };
+        /**
+         * @brief 添加一个条目到当前内存数据库。
+         *
+         * 支持两种输入形式：
+         * - add <name> <data> [type]
+         * - add <name> --file <path> [type]
+         */
+        handlers["add"] = [&](const auto& args) -> void {
+            if (args.size() < 3) {
+                replxx.print("%s\n", std::string(locale("用法: add <name> <data> [type] 或 add <name> --file <path> [type]")) .c_str()); // NOLINT
+                return;
+            }
+
+            const std::string& name = args.at(1);
+            uint32_t type = 1;
+            std::shared_ptr<uint8_t[]> dataBuffer;
+            uint32_t dataSize = 0;
+
+            if (args.size() >= 4 && (args.at(2) == "--file" || args.at(2) == "-f")) {
+                const std::string& path = args.at(3);
+                if (args.size() >= 5) {
+                    type = ParseEntryType(args.at(4));
+                }
+
+                dataBuffer = LoadFileBytes(path);
+                if (!dataBuffer && !std::ifstream(path, std::ios::binary)) {
+                    replxx.print("%s\n", std::format(locale("无法打开文件: {}"), path).c_str()); // NOLINT
+                    return;
+                }
+
+                std::ifstream file(path, std::ios::binary);
+                file.seekg(0, std::ios::end);
+                const auto fileSize = file.tellg();
+                if (fileSize < 0) {
+                    replxx.print("%s\n", std::format(locale("无法读取文件大小: {}"), path).c_str()); // NOLINT
+                    return;
+                }
+                dataSize = static_cast<uint32_t>(fileSize);
+                if (dataSize == 0) {
+                    dataBuffer = std::make_shared<uint8_t[]>(0);
+                }
+            } else {
+                const std::string& dataText = args.at(2);
+                if (args.size() >= 4) {
+                    type = ParseEntryType(args.at(3));
+                }
+
+                dataSize = static_cast<uint32_t>(dataText.size());
+                dataBuffer = std::make_shared<uint8_t[]>(dataText.size());
+                if (!dataText.empty()) {
+                    std::copy(dataText.begin(), dataText.end(), dataBuffer.get());
+                }
+            }
+
+            auto entry = std::make_shared<Engine::Utils::Data::DataEntry>(name, dataSize, type, dataBuffer);
+            ddm.InsertEntry(name, entry);
+            replxx.print("%s\n", std::format(locale("已添加条目: {}"), name).c_str()); // NOLINT
+        };
+        handlers["load"] = [&](const auto& args) -> void {
+            if (args.size() < 2) {
+                replxx.print("%s\n", std::string(locale("用法: load <path>")) .c_str()); // NOLINT
+                return;
+            }
+            int r = ddm.MountDB(args.at(1));
+            if (r != 0)
+                replxx.print("%s\n", std::format(locale("加载失败: {}"), r).c_str()); // NOLINT
+            else
+                replxx.print("%s\n", std::string(locale("加载成功")).c_str()); // NOLINT
+        };
+        handlers["savedb"] = [&](const auto& args) -> void {
+            if (args.size() < 2) {
+                replxx.print("%s\n", std::string(locale("用法: savedb <path> [desc]")) .c_str()); // NOLINT
+                return;
+            }
+            std::string desc = args.size() >= 3 ? args.at(2) : std::string();
+            int r = ddm.SaveDB(args.at(1), desc);
+            if (r != 0)
+                replxx.print("%s\n", std::format(locale("保存失败: {}"), r).c_str()); // NOLINT
+            else
+                replxx.print("%s\n", std::string(locale("保存成功")).c_str()); // NOLINT
+        };
+        handlers["show"] = [&](const auto& args) -> void {
+            if (args.size() < 2) {
+                replxx.print("%s\n", std::string(locale("用法: show <name>")) .c_str()); // NOLINT
+                return;
+            }
+            auto ent = ddm.GetEntry(args.at(1));
+            if (!ent) {
+                replxx.print("%s\n", std::format(locale("未找到条目: {}"), args.at(1)).c_str()); // NOLINT
+                return;
+            }
+            try {
+                const auto t = ent->Type.load();
+                std::string typeDisp = std::format("{}{}{}", TypeColorFromIndex(t), TypeNameFromIndex(t), "\x1b[0m");
+                replxx.print("%s\n", std::format(locale("类型: {}"), typeDisp).c_str()); // NOLINT
+                ent->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
+                    uint32_t sz = ent->GetSize();
+                    replxx.print("%s\n", std::format(locale("条目: {} 大小: {} 字节"), args.at(1), sz).c_str()); // NOLINT
+                    auto show = std::min(sz, static_cast<uint32_t>(kMaxShowBytes));
+
+                    // 先探测是否可能是 UTF-8 文本且大多数字节可打印
+                    if (IsLikelyUtf8(data.get(), show) && IsMostlyPrintable(data.get(), show)) {
+                        // 打印文本视图（截断显示），用绿色高亮
+                        std::string s(reinterpret_cast<const char*>(data.get()), show);
+                        std::string colored = std::format("\x1b[32m{}\x1b[0m", s);
+                        replxx.print("%s\n", colored.c_str()); // NOLINT
+                        if (show < sz)
+                            replxx.print("%s\n", std::format(locale("... (显示 {} 字节 / 总共 {} 字节)"), show, sz).c_str()); // NOLINT
+                    } else {
+                        // 打印 hex 摘要，用黄色高亮
+                        std::ostringstream oss;
+                        oss << std::hex << std::setfill('0');
+                        uint32_t hexShow = show < static_cast<uint32_t>(kHexSummaryBytes) ? show : static_cast<uint32_t>(kHexSummaryBytes);
+                        for (uint32_t i = 0; i < hexShow; ++i) {
+                            oss << std::setw(2) << static_cast<int>(data.get()[i]);
+                            if (i + 1 != hexShow)
+                                oss << ' ';
+                        }
+                        std::string hexs = oss.str();
+                        std::string colored = std::format("\x1b[33m{}\x1b[0m", hexs);
+                        replxx.print("%s\n", colored.c_str()); // NOLINT
+                        if (show < sz)
+                            replxx.print("%s\n", std::format(locale("... (hex 显示 {} 字节 / 总共 {} 字节)"), hexShow, sz).c_str()); // NOLINT
+                    }
+                });
+            } catch (const std::exception& e) {
+                replxx.print("%s\n", std::string(e.what()).c_str()); // NOLINT
+            }
+        };
+        handlers["rm"] = [&](const auto& args) -> void {
+            if (args.size() < 2) {
+                replxx.print("%s\n", std::string(locale("用法: rm <name>")) .c_str()); // NOLINT
+                return;
+            }
+            bool ok = ddm.RemoveEntry(args.at(1));
+            if (ok)
+                replxx.print("%s\n", std::format(locale("已删除: {}"), args.at(1)).c_str()); // NOLINT
+            else
+                replxx.print("%s\n", std::format(locale("未找到条目: {}"), args.at(1)).c_str()); // NOLINT
         };
 
         std::vector<std::string> commandNames;
@@ -96,7 +323,7 @@ public:
                 }
             } else if (numTokens == 1 && input.find(' ') == std::string::npos) {
                 // 正在输入命令
-                const std::string& prefix = tokens[0];
+                const std::string& prefix = tokens.front();
                 for (const auto& cmd : commandNames) {
                     if (cmd.starts_with(prefix)) {
                         completions.emplace_back(cmd);
@@ -104,18 +331,17 @@ public:
                 }
             } else {
 
-                const std::string& cmd = tokens[0];
+                const std::string& cmd = tokens.front();
 
                 const std::string& lastToken = tokens.back();
                 bool inParam = (input.back() != ' ');
-                // if (inParam && cmd == "console") {
-                //     static const std::vector<std::string> options = { "--port", "--help" };
-                //     for (const auto& opt : options) {
-                //         if (opt.starts_with(lastToken) == 0) {
-                //             completions.emplace_back(opt);
-                //         }
-                //     }
-                // }
+                if (inParam && (cmd == "show" || cmd == "rm")) {
+                    auto names = ddm.GetList();
+                    for (const auto& n : names) {
+                        if (n.starts_with(lastToken))
+                            completions.emplace_back(n);
+                    }
+                }
             }
             return completions;
         };
@@ -133,14 +359,14 @@ public:
             if (line.empty())
                 continue;
 
-            if (line[0] != ' ')
+            if (!line.empty() && line.front() != ' ')
                 replxx.history_add(line);
 
             auto args = parseCommandLine(line);
             if (args.empty())
                 continue;
 
-            const std::string& cmd = args[0];
+            const std::string& cmd = args.front();
             auto it = handlers.find(cmd);
             if (it != handlers.end()) {
                 it->second(args);

@@ -25,27 +25,31 @@ struct DB_Header {
     uint8_t end_flag { 1 }; // 结束标志
 
     /**
-     * @brief 设置描述信息
-     *
-     * @param text 描述信息
-     * @param size 描述字符串大小
-     * @param format 是否对已有数据进行格式化
-     * @return uint8_t 返回值，如果size超过503则返回1，否则返回0
+    * @brief 设置头部描述信息。
+    * @param text 描述字符串。
+    * @param size 描述字符串长度。
+    * @param format 是否将剩余字节补零。
+    * @return 0 表示成功；1 表示长度非法或输入为空。
      */
     auto SetDesc(const char* text, size_t size, bool format = true) -> uint8_t
     {
-        if (size > 503) {
+        if (size > 503 || (text == nullptr && size != 0)) {
             return 1;
         }
         memcpy(desc, text, size);
 
         if (format && (503 - size) > 0) {
-            memset((void*)(desc + size), '\0', 503 - size);
+            memset(reinterpret_cast<void*>(desc + size), '\0', 503 - size);
         }
         return 0;
     }
 };
 
+/**
+ * @brief 数据条目头部。
+ *
+ * 保存条目名称长度、数据长度和数据类型，后面紧跟名称字节和数据字节。
+ */
 struct DB_DataEntry_Header {
     uint8_t NameSize { 0 }; // 名称大小
     uint32_t Size { 0 }; // 大小
