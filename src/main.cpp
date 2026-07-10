@@ -2,6 +2,9 @@
  * @brief Main.cpp，程序入口，没了。
  *
  */
+
+#include <string>
+
 import Engine.Utils.Logger;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Data.DataEntry;
@@ -13,6 +16,7 @@ import Engine.Utils.Data.DataEntry.EntryType;
 import Engine.Utils.Arg.Format;
 import Engine.Utils.Arg.MArg;
 import Engine.Utils.DevConsole;
+import Engine.i18n;
 
 Engine::Game g;
 
@@ -27,6 +31,9 @@ auto main(const int argc, const char* argv[], const char* envp[]) -> int // NOLI
     Engine::Utils::Arg::MArg mp = Engine::Utils::Arg::FormatParam(argc, argv, envp);
     if (mp._dev_console) {
         return Engine::Utils::DevConsole::MainAct(mp);
+    } else if (mp._help) {
+        Engine::Utils::Logger::Log(std::string(Engine::i18n::locale(Engine::Utils::helpmsg)), Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL);
+        return 0;
     }
     g.StartUp();
     g.MainLoop();

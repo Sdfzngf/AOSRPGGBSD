@@ -204,7 +204,7 @@ public:
                 dataSize = static_cast<uint32_t>(dataText.size());
                 dataBuffer = std::make_shared<uint8_t[]>(dataText.size());
                 if (!dataText.empty()) {
-                    std::copy(dataText.begin(), dataText.end(), dataBuffer.get());
+                    std::ranges::copy(dataText, dataBuffer.get());
                 }
             }
 

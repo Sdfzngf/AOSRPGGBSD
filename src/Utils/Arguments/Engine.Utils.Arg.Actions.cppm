@@ -23,10 +23,6 @@ const std::unordered_map<std::string, std::function<void(Engine::Utils::Arg::MAr
     { "--test-param2", [](Engine::Utils::Arg::MArg& mp) -> void { mp._test_param2 = true; } },
     { "--test-param3", [](Engine::Utils::Arg::MArg& mp) -> void { mp._test_param3 = true; } },
     { "console", [](Engine::Utils::Arg::MArg& mp) -> void { mp._dev_console = true; } },
-    { "help", [](Engine::Utils::Arg::MArg& mp) -> void {
-         mp._help = true;
-         Engine::Utils::Logger::Log(std::string(locale(Engine::Utils::helpmsg)), Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL);
-         exit(0);
-     } }
+    { "help", [](Engine::Utils::Arg::MArg& mp) -> void { mp._help = true; } }
 };
 }
