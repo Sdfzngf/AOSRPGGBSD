@@ -4,27 +4,16 @@
  */
 module;
 
+#include <algorithm>
 #include <format>
 #include <fstream>
-#include <string>
-#include <vector>
-#include <unordered_map>
 #include <functional>
-#include <sstream>
-#include <algorithm>
 #include <iomanip>
-
-import Engine.Basics.TextUtils;
-
-using Engine::Basics::TextUtils::kMaxShowBytes;
-using Engine::Basics::TextUtils::kHexSummaryBytes;
-using Engine::Basics::TextUtils::IsLikelyUtf8;
-using Engine::Basics::TextUtils::IsMostlyPrintable;
-using Engine::Basics::TextUtils::TypeNameFromIndex;
-using Engine::Basics::TextUtils::TypeColorFromIndex;
-
-// 引入 replxx 头文件
 #include <replxx.hxx>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 export module Engine.Utils.DevConsole:MainAct;
 
@@ -33,7 +22,14 @@ import Engine.Utils.Logger;
 import Engine.i18n;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Data.DataEntry;
+import Engine.Basics.TextUtils;
 
+using Engine::Basics::TextUtils::IsLikelyUtf8;
+using Engine::Basics::TextUtils::IsMostlyPrintable;
+using Engine::Basics::TextUtils::kHexSummaryBytes;
+using Engine::Basics::TextUtils::kMaxShowBytes;
+using Engine::Basics::TextUtils::TypeColorFromIndex;
+using Engine::Basics::TextUtils::TypeNameFromIndex;
 using Engine::i18n::locale;
 using Engine::Utils::Logger::Log;
 
@@ -167,7 +163,7 @@ public:
          */
         handlers["add"] = [&](const auto& args) -> void {
             if (args.size() < 3) {
-                replxx.print("%s\n", std::string(locale("用法: add <name> <data> [type] 或 add <name> --file <path> [type]")) .c_str()); // NOLINT
+                replxx.print("%s\n", std::string(locale("用法: add <name> <data> [type] 或 add <name> --file <path> [type]")).c_str()); // NOLINT
                 return;
             }
 
@@ -218,7 +214,7 @@ public:
         };
         handlers["load"] = [&](const auto& args) -> void {
             if (args.size() < 2) {
-                replxx.print("%s\n", std::string(locale("用法: load <path>")) .c_str()); // NOLINT
+                replxx.print("%s\n", std::string(locale("用法: load <path>")).c_str()); // NOLINT
                 return;
             }
             int r = ddm.MountDB(args.at(1));
@@ -229,7 +225,7 @@ public:
         };
         handlers["savedb"] = [&](const auto& args) -> void {
             if (args.size() < 2) {
-                replxx.print("%s\n", std::string(locale("用法: savedb <path> [desc]")) .c_str()); // NOLINT
+                replxx.print("%s\n", std::string(locale("用法: savedb <path> [desc]")).c_str()); // NOLINT
                 return;
             }
             std::string desc = args.size() >= 3 ? args.at(2) : std::string();
@@ -241,7 +237,7 @@ public:
         };
         handlers["show"] = [&](const auto& args) -> void {
             if (args.size() < 2) {
-                replxx.print("%s\n", std::string(locale("用法: show <name>")) .c_str()); // NOLINT
+                replxx.print("%s\n", std::string(locale("用法: show <name>")).c_str()); // NOLINT
                 return;
             }
             auto ent = ddm.GetEntry(args.at(1));
@@ -289,7 +285,7 @@ public:
         };
         handlers["rm"] = [&](const auto& args) -> void {
             if (args.size() < 2) {
-                replxx.print("%s\n", std::string(locale("用法: rm <name>")) .c_str()); // NOLINT
+                replxx.print("%s\n", std::string(locale("用法: rm <name>")).c_str()); // NOLINT
                 return;
             }
             bool ok = ddm.RemoveEntry(args.at(1));

@@ -12,7 +12,7 @@ module;
 #include <unordered_map>
 #include <utility>
 
-module Engine.Utils.Data.DataManager:fuctions;
+module Engine.Utils.Data.DataManager:functions;
 
 import Engine.Utils.Data.DataManager;
 

@@ -74,6 +74,7 @@ target_sources(AOSRPGGBSD
                 FILES src/Basics/Engine.Basics.Memory.cppm
                 FILES src/Basics/Engine.Basics.Memory.MemoryStream.cppm
                 FILES src/Basics/Engine.Basics.TextUtils.cppm
+                FILES src/Basics/Engine.Basics.TextUtils.functions.cppm
                 FILES src/Utils/Engine.Utils.Time.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.cppm
@@ -95,7 +96,7 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Data/Engine.Utils.Data.DB.cppm
                 FILES src/Utils/Data/Engine.Utils.Data.DataEntry.EntryType.cppm
                 FILES src/Utils/Data/Engine.Utils.Data.DataEntry.cppm
-                FILES src/Utils/Data/Engine.Utils.Data.DataManager.fuction.cppm
+                FILES src/Utils/Data/Engine.Utils.Data.DataManager.functions.cppm
                 FILES src/Utils/Data/Engine.Utils.Data.DataManager.cppm
 
                 FILES src/Basics/Engine.Basics.Game.cppm
