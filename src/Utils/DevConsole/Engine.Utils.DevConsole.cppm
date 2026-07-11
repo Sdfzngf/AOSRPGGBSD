@@ -12,6 +12,7 @@ export namespace Engine::Utils {
 extern const char* helpmsg;
 class DevConsole {
 public:
-    static auto MainAct(Engine::Utils::Arg::MArg mp) -> int;
+    static auto MainAct(const Engine::Utils::Arg::MArg& mp) -> int;
+    static auto PackData(const Engine::Utils::Arg::MArg& mp) -> int;
 };
 }

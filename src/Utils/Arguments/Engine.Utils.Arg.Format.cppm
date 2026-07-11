@@ -21,11 +21,16 @@ extern const std::unordered_map<std::string, std::function<void(Engine::Utils::A
 auto FormatParam(const int argc, const char* argv[], const char* envp[]) -> MArg
 {
     MArg Mp;
+    std::string ppara = "";
     for (int i : std::views::iota(1, argc)) {
         if (auto it = arg_actions.find(argv[i]); it != arg_actions.end()) {
+            ppara = it->first;
             it->second(Mp);
         } else {
-            Engine::Utils::Logger::Log(std::format(Engine::i18n::locale("未知参数 \"{}\""), argv[i]), Engine::Utils::Logger::LogLevel::WARN);
+            if (ppara == "pack")
+                Mp._pack_arg.emplace_back(argv[i]);
+            else
+                Engine::Utils::Logger::Log(std::format(Engine::i18n::locale("未知参数 \"{}\""), argv[i]), Engine::Utils::Logger::LogLevel::WARN);
         }
     }
     return Mp;

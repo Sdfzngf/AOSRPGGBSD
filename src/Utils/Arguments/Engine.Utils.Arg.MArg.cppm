@@ -4,6 +4,9 @@
  */
 module;
 
+#include <string>
+#include <vector>
+
 export module Engine.Utils.Arg.MArg;
 
 export namespace Engine::Utils::Arg {
@@ -18,5 +21,8 @@ struct MArg {
     bool _dev_console { false };
     // --help
     bool _help { false };
+    // 打包资源
+    bool _pack { false };
+    std::vector<std::string> _pack_arg { };
 };
 }

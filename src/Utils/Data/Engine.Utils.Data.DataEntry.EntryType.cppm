@@ -13,6 +13,8 @@ enum class EntryType : uint8_t {
     Binary = 0,
     String = 1,
     List = 2,
-    Script = 3
+    Script = 3,
+    png = 4,
+    svg = 5
 };
 }

@@ -35,11 +35,168 @@ using Engine::Utils::Logger::Log;
 
 Engine::Utils::Data::DataManager ddm;
 
+/**
+ * @brief 将条目类型文本解析为内部类型编号。
+ * @param typeText 类型文本或数字编号。
+ * @return 对应的类型编号，未识别时默认返回 String 类型。
+ */
+static auto ParseEntryType(const std::string& typeText) -> uint32_t
+{
+    if (typeText == "0" || typeText == "binary" || typeText == "Binary")
+        return 0;
+    if (typeText == "1" || typeText == "string" || typeText == "String")
+        return 1;
+    if (typeText == "2" || typeText == "list" || typeText == "List")
+        return 2;
+    if (typeText == "3" || typeText == "script" || typeText == "Script")
+        return 3;
+    if (typeText == "4" || typeText == "png" || typeText == "PNG")
+        return 4;
+    if (typeText == "5" || typeText == "svg" || typeText == "SVG")
+        return 5;
+    return 0;
+}
+
+/**
+ * @brief 从文件读取原始字节。
+ * @param path 文件路径。
+ * @return 成功时返回包含文件内容的缓冲区；失败时返回 nullptr。
+ */
+static auto LoadFileBytes(const std::string& path) -> std::shared_ptr<uint8_t[]>
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        return nullptr;
+    }
+
+    file.seekg(0, std::ios::end);
+    const auto fileSize = file.tellg();
+    if (fileSize < 0) {
+        return nullptr;
+    }
+    file.seekg(0, std::ios::beg);
+
+    auto buffer = std::make_shared<uint8_t[]>(static_cast<size_t>(fileSize));
+    if (fileSize > 0) {
+        file.read(reinterpret_cast<char*>(buffer.get()), fileSize);
+        if (!file) {
+            return nullptr;
+        }
+    }
+    return buffer;
+}
+
+/**
+ * @brief 解析控制台输入行。
+ * @param line 原始输入行。
+ * @return 解析后的参数列表。
+ */
+static auto parseCommandLine(const std::string& line) -> std::vector<std::string>
+{
+    std::vector<std::string> args;
+    std::string current;
+    bool inQuotes = false;
+    for (char ch : line) {
+        if (ch == '"') {
+            inQuotes = !inQuotes;
+        } else if (ch == ' ' && !inQuotes) {
+            if (!current.empty()) {
+                args.push_back(current);
+                current.clear();
+            }
+        } else {
+            current += ch;
+        }
+    }
+    if (!current.empty()) {
+        args.push_back(current);
+    }
+    return args;
+}
+
+/**
+ * @brief 添加一个条目到当前内存数据库。
+ *
+ * @param args 参数
+ * @param replxx replxx
+ *
+ * 支持两种输入形式：
+ * - add <name> <data> [type]
+ * - add <name> --file <path> [type]
+ */
+void Add(const auto& args, replxx::Replxx& replxx)
+{
+    if (args.size() < 3) {
+        replxx.print("%s\n", std::string(locale("用法: add <name> <data> [type] 或 add <name> --file <path> [type]")).c_str()); // NOLINT
+        return;
+    }
+
+    const std::string& name = args.at(1);
+    uint32_t type = 1;
+    std::shared_ptr<uint8_t[]> dataBuffer;
+    uint32_t dataSize = 0;
+
+    if (args.size() >= 4 && (args.at(2) == "--file" || args.at(2) == "-f")) {
+        const std::string& path = args.at(3);
+        if (args.size() >= 5) {
+            type = ParseEntryType(args.at(4));
+        }
+
+        dataBuffer = LoadFileBytes(path);
+        if (!dataBuffer && !std::ifstream(path, std::ios::binary)) {
+            replxx.print("%s\n", std::format(locale("无法打开文件: {}"), path).c_str()); // NOLINT
+            return;
+        }
+
+        std::ifstream file(path, std::ios::binary);
+        file.seekg(0, std::ios::end);
+        const auto fileSize = file.tellg();
+        if (fileSize < 0) {
+            replxx.print("%s\n", std::format(locale("无法读取文件大小: {}"), path).c_str()); // NOLINT
+            return;
+        }
+        dataSize = static_cast<uint32_t>(fileSize);
+        if (dataSize == 0) {
+            dataBuffer = std::make_shared<uint8_t[]>(0);
+        }
+    } else {
+        const std::string& dataText = args.at(2);
+        if (args.size() >= 4) {
+            type = ParseEntryType(args.at(3));
+        }
+
+        dataSize = static_cast<uint32_t>(dataText.size());
+        dataBuffer = std::make_shared<uint8_t[]>(dataText.size());
+        if (!dataText.empty()) {
+            std::ranges::copy(dataText, dataBuffer.get());
+        }
+    }
+
+    auto entry = std::make_shared<Engine::Utils::Data::DataEntry>(name, dataSize, type, dataBuffer);
+    ddm.InsertEntry(name, entry);
+    replxx.print("%s\n", std::format(locale("已添加条目: {}"), name).c_str()); // NOLINT
+}
+
+void SaveDB(const auto& args, replxx::Replxx& replxx)
+{
+    if (args.size() < 2) {
+        replxx.print("%s\n", std::string(locale("用法: savedb <path> [desc]")).c_str()); // NOLINT
+        return;
+    }
+    std::string desc = args.size() >= 3 ? args.at(2) : std::string();
+    int r = ddm.SaveDB(args.at(1), desc);
+    if (r != 0)
+        replxx.print("%s\n", std::format(locale("保存失败: {}"), r).c_str()); // NOLINT
+    else
+        replxx.print("%s\n", std::string(locale("保存成功")).c_str()); // NOLINT
+}
+
 export namespace Engine::Utils {
 
 constexpr const char* helpmsg = "AOSRPGGBSD v0.1\n"
                                 "命令行参数:\n"
                                 "    console     进入交互式控制台\n"
+                                "    pack        打包数据: pack <source>... <target> <desc>\n"
                                 "    help        输出本条信息\n"
                                 "控制台参数:\n"
                                 "    help        获取帮助信息\n"
@@ -52,95 +209,21 @@ constexpr const char* helpmsg = "AOSRPGGBSD v0.1\n"
                                 "    savedb      保存数据库: savedb <path> [desc]\n"
                                 "    exit        退出交互式控制台\n"
                                 "\n";
-
+std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> handlers;
 class DevConsole {
+
 public:
-    /**
-     * @brief 将条目类型文本解析为内部类型编号。
-     * @param typeText 类型文本或数字编号。
-     * @return 对应的类型编号，未识别时默认返回 String 类型。
-     */
-    static auto ParseEntryType(const std::string& typeText) -> uint32_t
-    {
-        if (typeText == "0" || typeText == "binary" || typeText == "Binary")
-            return 0;
-        if (typeText == "1" || typeText == "string" || typeText == "String")
-            return 1;
-        if (typeText == "2" || typeText == "list" || typeText == "List")
-            return 2;
-        if (typeText == "3" || typeText == "script" || typeText == "Script")
-            return 3;
-        return 1;
-    }
-
-    /**
-     * @brief 从文件读取原始字节。
-     * @param path 文件路径。
-     * @return 成功时返回包含文件内容的缓冲区；失败时返回 nullptr。
-     */
-    static auto LoadFileBytes(const std::string& path) -> std::shared_ptr<uint8_t[]>
-    {
-        std::ifstream file(path, std::ios::binary);
-        if (!file) {
-            return nullptr;
-        }
-
-        file.seekg(0, std::ios::end);
-        const auto fileSize = file.tellg();
-        if (fileSize < 0) {
-            return nullptr;
-        }
-        file.seekg(0, std::ios::beg);
-
-        auto buffer = std::make_shared<uint8_t[]>(static_cast<size_t>(fileSize));
-        if (fileSize > 0) {
-            file.read(reinterpret_cast<char*>(buffer.get()), fileSize);
-            if (!file) {
-                return nullptr;
-            }
-        }
-        return buffer;
-    }
-
-    /**
-     * @brief 解析控制台输入行。
-     * @param line 原始输入行。
-     * @return 解析后的参数列表。
-     */
-    static auto parseCommandLine(const std::string& line) -> std::vector<std::string>
-    {
-        std::vector<std::string> args;
-        std::string current;
-        bool inQuotes = false;
-        for (char ch : line) {
-            if (ch == '"') {
-                inQuotes = !inQuotes;
-            } else if (ch == ' ' && !inQuotes) {
-                if (!current.empty()) {
-                    args.push_back(current);
-                    current.clear();
-                }
-            } else {
-                current += ch;
-            }
-        }
-        if (!current.empty()) {
-            args.push_back(current);
-        }
-        return args;
-    }
     /**
      * @brief 启动开发者控制台主循环。
      * @param mp 解析后的命令行参数。
      * @return 程序退出码。
      */
-    static auto MainAct(Engine::Utils::Arg::MArg mp) -> int
+    static auto MainAct(const Engine::Utils::Arg::MArg& mp) -> int
     {
         Logger::Log("DevConsole::MainAct()", Logger::LogLevel::DEBUG);
 
         replxx::Replxx replxx;
 
-        std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> handlers;
         bool exitRequested = false;
 
         handlers["help"] = [&](const auto& args) -> void {
@@ -154,63 +237,9 @@ public:
                 replxx.print("%s\n", i.c_str()); // NOLINT
             }
         };
-        /**
-         * @brief 添加一个条目到当前内存数据库。
-         *
-         * 支持两种输入形式：
-         * - add <name> <data> [type]
-         * - add <name> --file <path> [type]
-         */
+
         handlers["add"] = [&](const auto& args) -> void {
-            if (args.size() < 3) {
-                replxx.print("%s\n", std::string(locale("用法: add <name> <data> [type] 或 add <name> --file <path> [type]")).c_str()); // NOLINT
-                return;
-            }
-
-            const std::string& name = args.at(1);
-            uint32_t type = 1;
-            std::shared_ptr<uint8_t[]> dataBuffer;
-            uint32_t dataSize = 0;
-
-            if (args.size() >= 4 && (args.at(2) == "--file" || args.at(2) == "-f")) {
-                const std::string& path = args.at(3);
-                if (args.size() >= 5) {
-                    type = ParseEntryType(args.at(4));
-                }
-
-                dataBuffer = LoadFileBytes(path);
-                if (!dataBuffer && !std::ifstream(path, std::ios::binary)) {
-                    replxx.print("%s\n", std::format(locale("无法打开文件: {}"), path).c_str()); // NOLINT
-                    return;
-                }
-
-                std::ifstream file(path, std::ios::binary);
-                file.seekg(0, std::ios::end);
-                const auto fileSize = file.tellg();
-                if (fileSize < 0) {
-                    replxx.print("%s\n", std::format(locale("无法读取文件大小: {}"), path).c_str()); // NOLINT
-                    return;
-                }
-                dataSize = static_cast<uint32_t>(fileSize);
-                if (dataSize == 0) {
-                    dataBuffer = std::make_shared<uint8_t[]>(0);
-                }
-            } else {
-                const std::string& dataText = args.at(2);
-                if (args.size() >= 4) {
-                    type = ParseEntryType(args.at(3));
-                }
-
-                dataSize = static_cast<uint32_t>(dataText.size());
-                dataBuffer = std::make_shared<uint8_t[]>(dataText.size());
-                if (!dataText.empty()) {
-                    std::ranges::copy(dataText, dataBuffer.get());
-                }
-            }
-
-            auto entry = std::make_shared<Engine::Utils::Data::DataEntry>(name, dataSize, type, dataBuffer);
-            ddm.InsertEntry(name, entry);
-            replxx.print("%s\n", std::format(locale("已添加条目: {}"), name).c_str()); // NOLINT
+            Add(args, replxx);
         };
         handlers["load"] = [&](const auto& args) -> void {
             if (args.size() < 2) {
@@ -224,16 +253,7 @@ public:
                 replxx.print("%s\n", std::string(locale("加载成功")).c_str()); // NOLINT
         };
         handlers["savedb"] = [&](const auto& args) -> void {
-            if (args.size() < 2) {
-                replxx.print("%s\n", std::string(locale("用法: savedb <path> [desc]")).c_str()); // NOLINT
-                return;
-            }
-            std::string desc = args.size() >= 3 ? args.at(2) : std::string();
-            int r = ddm.SaveDB(args.at(1), desc);
-            if (r != 0)
-                replxx.print("%s\n", std::format(locale("保存失败: {}"), r).c_str()); // NOLINT
-            else
-                replxx.print("%s\n", std::string(locale("保存成功")).c_str()); // NOLINT
+            SaveDB(args, replxx);
         };
         handlers["show"] = [&](const auto& args) -> void {
             if (args.size() < 2) {
@@ -369,6 +389,58 @@ public:
             } else {
                 replxx.print("%s\n", std::format(locale("未知的命令: {}，输入 \"help\" 获取帮助信息"), cmd).c_str()); // NOLINT
             }
+        }
+        return 0;
+    }
+    static auto PackData(const Engine::Utils::Arg::MArg& mp) -> int
+    {
+        if (mp._pack) {
+            if (mp._pack_arg.size() < 3) {
+                Log(std::format(locale("{0}: 至少需要 {1} 个参数"), "pack", "3"), Logger::LogLevel::ERROR);
+                return 1;
+            }
+            int j = 0;
+            replxx::Replxx replxx;
+            for (auto& i : mp._pack_arg) {
+                if (j > mp._pack_arg.size() - 3) {
+                    break;
+                }
+                std::fstream file(i, std::ios_base::in);
+                if (!file) {
+                    Log(std::format(locale("{0}: 无法打开文件 {1}"), "pack", i), Logger::LogLevel::ERROR);
+                    return 2;
+                }
+                std::string line;
+                while (std::getline(file, line)) {
+                    const char* cinput = line.c_str();
+                    if (cinput == nullptr) {
+                        replxx.print("\n"); // NOLINT
+                        break;
+                    }
+
+                    line = cinput;
+                    if (line.empty())
+                        continue;
+
+                    auto args = parseCommandLine(line);
+                    if (args.empty())
+                        continue;
+
+                    const std::string& cmd = args.front();
+                    if (cmd == "add") {
+                        Add(args, replxx);
+                    }
+                }
+                file.close();
+                j++;
+            }
+            SaveDB(std::vector<std::string> {
+                       "savedb",
+                       mp._pack_arg.at(mp._pack_arg.size() - 2),
+                       mp._pack_arg.at(mp._pack_arg.size() - 1)
+
+                   },
+                   replxx);
         }
         return 0;
     }

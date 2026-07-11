@@ -1,0 +1,3 @@
+add TEST_1 "Hello Worl d" string
+add TitleSVG --file "../src/Resources/icon.svg" SVG
+add img1 --file "../src/Resources/img1.svg" SVG

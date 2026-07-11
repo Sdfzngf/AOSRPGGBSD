@@ -34,6 +34,8 @@ auto main(const int argc, const char* argv[], const char* envp[]) -> int // NOLI
     } else if (mp._help) {
         Engine::Utils::Logger::Log(std::string(Engine::i18n::locale(Engine::Utils::helpmsg)), Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL);
         return 0;
+    } else if (mp._pack) {
+        return Engine::Utils::DevConsole::PackData(mp);
     }
     g.StartUp();
     g.MainLoop();

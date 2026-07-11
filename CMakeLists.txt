@@ -66,6 +66,14 @@ add_executable(AOSRPGGBSD
         src/main.cpp
 )
 
+add_custom_target(PackRes
+        COMMAND "rm" -rf ./bin/Game
+        COMMAND "mkdir" ./bin/Game/
+        COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/test.rres ./bin/Game/b.dat 11451
+        USES_TERMINAL
+        VERBATIM
+)
+
 #target_compile_definitions(AOSRPGGBSD PRIVATE NDEBUG)
 
 target_sources(AOSRPGGBSD

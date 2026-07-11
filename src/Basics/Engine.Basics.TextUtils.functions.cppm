@@ -76,6 +76,10 @@ auto TypeNameFromIndex(uint32_t idx) -> const char*
         return "List";
     case 3:
         return "Script";
+    case 4:
+        return "PNG";
+    case 5:
+        return "SVG";
     default:
         return "Unknown";
     }

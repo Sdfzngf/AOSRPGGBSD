@@ -10,8 +10,8 @@ module;
 #include <format>
 #include <fstream>
 #include <functional>
-#include <memory>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <sys/stat.h>
@@ -246,6 +246,7 @@ public:
             file.write(reinterpret_cast<const char*>(&entryh), sizeof(entryh));
             file.write(nn.c_str(), entryh.NameSize);
             file.write(reinterpret_cast<const char*>(pai.second.get()->Data.load().get()), entryh.Size);
+            i++;
         }
         file.close();
         ccb(std::string(locale("保存完成")), 100);
