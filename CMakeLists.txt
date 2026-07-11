@@ -74,6 +74,13 @@ add_custom_target(PackRes
         VERBATIM
 )
 
+add_custom_target(BGM
+        COMMAND "lmms" render ../src/Resources/BGM/FallInMyDream.mmpz -o ../src/Resources/BGM/FallInMyDream.wav
+        COMMAND "lmms" render ../src/Resources/BGM/ITERATION.mmpz -o ../src/Resources/BGM/ITERATION.wav
+        USES_TERMINAL
+        VERBATIM
+)
+
 #target_compile_definitions(AOSRPGGBSD PRIVATE NDEBUG)
 
 target_sources(AOSRPGGBSD
