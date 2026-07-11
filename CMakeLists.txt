@@ -62,6 +62,22 @@ if(NOT TARGET replxx)
         message(FATAL_ERROR "replxx target is unavailable")
 endif()
 
+CPMAddPackage(
+    NAME lua
+    GITHUB_REPOSITORY lua/lua
+    GIT_TAG v5.5.0
+)
+
+# 编译 Lua 为静态库（排除 lua.c 和 luac.c，避免 main 冲突）
+file(GLOB LUA_SOURCES "${lua_SOURCE_DIR}/*.c")
+list(REMOVE_ITEM LUA_SOURCES
+        "${lua_SOURCE_DIR}/lua.c"
+        "${lua_SOURCE_DIR}/luac.c"
+        "${lua_SOURCE_DIR}/onelua.c"
+)
+add_library(lua STATIC ${LUA_SOURCES})
+target_include_directories(lua PUBLIC ${lua_SOURCE_DIR})
+
 add_executable(AOSRPGGBSD
         src/main.cpp
 )
@@ -122,7 +138,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static replxx)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static replxx lua)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

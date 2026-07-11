@@ -3,6 +3,7 @@
  *
  */
 
+#include <lua.hpp>
 #include <string>
 
 import Engine.Utils.Logger;
@@ -40,4 +41,7 @@ auto main(const int argc, const char* argv[], const char* envp[]) -> int // NOLI
     g.StartUp();
     g.MainLoop();
     g.ShutDown();
+    lua_State* L = luaL_newstate();
+    luaL_openlibs(L);
+    luaL_dostring(L, "print(\"FUCK ME\")");
 }
