@@ -33,10 +33,12 @@ struct DB_Header {
      */
     auto SetDesc(const char* text, size_t size, bool format = true) -> uint8_t
     {
-        if (size > 503 || (text == nullptr && size != 0)) {
+        if (size > 503 || text == nullptr) {
             return 1;
         }
-        memcpy(desc, text, size);
+        if (size > 0) {
+            memcpy(desc, text, size);
+        }
 
         if (format && (503 - size) > 0) {
             memset(reinterpret_cast<void*>(desc + size), '\0', 503 - size);

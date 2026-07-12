@@ -4,6 +4,7 @@
  */
 module;
 
+#include <atomic>
 #include <cstdint>
 
 export module Engine.Utils.Logger.LogLevel;
@@ -27,5 +28,5 @@ enum class LogLevel : uint8_t {
     NOTIMEANDLEVEL = 9, // 不在日志中显示时间和日志等级
     NOOPT = 10 // 不输出日志
 };
-inline LogLevel CurrentLogLevel = LogLevel::DEBUG;
+inline std::atomic<LogLevel> CurrentLogLevel = LogLevel::DEBUG;
 }

@@ -121,6 +121,7 @@ public:
      */
     auto Clear() -> void
     {
+        std::unique_lock<std::shared_mutex> lock(mtx);
         Data.clear();
     }
 
@@ -129,6 +130,7 @@ public:
      */
     auto GetList() -> std::vector<std::string>
     {
+        std::shared_lock lock(mtx);
         std::vector<std::string> entrys;
         entrys.reserve(Data.size());
         for (const auto& j : Data) {

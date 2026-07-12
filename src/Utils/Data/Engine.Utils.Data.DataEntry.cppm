@@ -43,9 +43,10 @@ struct DataEntry {
         Data = data;
     }
 
-    void SetData(const std::shared_ptr<uint8_t[]>& data)
+    void SetData(const std::shared_ptr<uint8_t[]>& data, uint32_t size)
     {
         std::unique_lock lock(DataMutex);
+        Size.store(size);
         Data.store(data);
     }
 

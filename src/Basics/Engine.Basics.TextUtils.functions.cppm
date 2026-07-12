@@ -23,16 +23,29 @@ auto IsLikelyUtf8(const uint8_t* data, std::size_t len) -> bool
             continue;
         }
         std::size_t need = 0;
-        if ((c & 0xE0) == 0xC0)
+        if ((c & 0xE0) == 0xC0) {
+            // 拒绝过长编码：0xC0-0xC1（本应编码为单字节 ASCII）
+            if (c <= 0xC1)
+                return false;
             need = 1;
-        else if ((c & 0xF0) == 0xE0)
+        } else if ((c & 0xF0) == 0xE0) {
             need = 2;
-        else if ((c & 0xF8) == 0xF0)
+        } else if ((c & 0xF8) == 0xF0) {
+            // 拒绝码点 > 0x10FFFF（UTF-8 上限）
+            if (c > 0xF4)
+                return false;
             need = 3;
-        else
+        } else
             return false;
         if (i + need >= len)
             return false;
+
+        // 拒绝过长编码的第二个字节不合法
+        if (need >= 2 && c == 0xE0 && (data[i + 1] & 0xE0) == 0x80)
+            return false;
+        if (need >= 3 && c == 0xF0 && (data[i + 1] & 0xF0) == 0x80)
+            return false;
+
         for (std::size_t j = 1; j <= need; ++j) {
             if ((data[i + j] & 0xC0) != 0x80)
                 return false;

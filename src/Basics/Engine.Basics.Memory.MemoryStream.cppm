@@ -108,7 +108,7 @@ public:
     auto operator<<(T right) -> int
     {
         uint64_t rightsize = 0;
-        if constexpr (std::is_same_v<const char*, T>) {
+        if constexpr (std::is_same_v<const char*, T> || std::is_same_v<char*, T>) {
             if (!right)
                 return 1;
             rightsize = strlen(right);
@@ -117,7 +117,7 @@ public:
                 return 1;
             rightsize = right.size;
         } else if constexpr (std::is_same_v<std::shared_ptr<uint8_t[]>, T>) {
-            static_assert(false, "不要用来操作智能指针");
+            static_assert(sizeof(T) == 0, "不要用来操作智能指针");
         } else {
             rightsize = sizeof(right);
         }
@@ -150,9 +150,9 @@ public:
     {
         uint64_t rightsize = 0;
         if constexpr (std::is_pointer_v<T>) {
-            static_assert(false, ">>不支持指针类型");
+            static_assert(sizeof(T) == 0, ">>不支持指针类型");
         } else if constexpr (std::is_same_v<std::shared_ptr<uint8_t[]>, T>) {
-            static_assert(false, "不要用来操作智能指针");
+            static_assert(sizeof(T) == 0, "不要用来操作智能指针");
         } else if constexpr (std::is_same_v<MemoryBlock, T>) {
             if (right.size > 0 && !right.block)
                 return 1;

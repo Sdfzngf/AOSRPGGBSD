@@ -4,6 +4,7 @@
  */
 module;
 
+#include <atomic>
 #include <iostream>
 #include <string>
 
@@ -17,7 +18,7 @@ using Engine::i18n::locale;
 // NOLINTBEGIN
 export namespace Engine::Utils::Logger {
 #define _log_pref()                                                                                                               \
-    if (loglevel < Engine::Utils::Logger::CurrentLogLevel && loglevel != Engine::Utils::Logger::LogLevel::SUCCESS) {              \
+    if (loglevel < Engine::Utils::Logger::CurrentLogLevel.load(std::memory_order_relaxed) && loglevel != Engine::Utils::Logger::LogLevel::SUCCESS) {              \
         return 1;                                                                                                                 \
     }                                                                                                                             \
     if ((loglevel != Engine::Utils::Logger::LogLevel::NOTIME) && (loglevel != Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL)) { \

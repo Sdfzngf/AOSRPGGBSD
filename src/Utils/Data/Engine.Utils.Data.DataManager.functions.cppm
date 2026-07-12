@@ -300,6 +300,9 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
     uint8_t version = 1;
     file.write(reinterpret_cast<const char*>(&version), 1);
 
+    if (snap.name.size() > UINT8_MAX) {
+        Log([&name]() -> std::string { return std::format(locale("警告：快照名称过长将被截断: {}"), name); });
+    }
     uint8_t nameLen = static_cast<uint8_t>(snap.name.size());
     file.write(reinterpret_cast<const char*>(&nameLen), 1);
     file.write(snap.name.data(), nameLen);
@@ -318,6 +321,9 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
 
     // Entries
     for (const auto& [key, entry] : snap.entries) {
+        if (key.size() > UINT8_MAX) {
+            Log([&key]() -> std::string { return std::format(locale("警告：条目名称过长将被截断: {}"), key); });
+        }
         uint8_t keyLen = static_cast<uint8_t>(key.size());
         file.write(reinterpret_cast<const char*>(&keyLen), 1);
         file.write(key.data(), keyLen);
@@ -325,10 +331,9 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
         uint32_t type = entry->Type.load();
         file.write(reinterpret_cast<const char*>(&type), 4);
 
-        uint32_t dataSize = entry->Size.load();
-        file.write(reinterpret_cast<const char*>(&dataSize), 4);
-
         entry->Read([&](const std::shared_ptr<uint8_t[]>& data) {
+            uint32_t dataSize = entry->Size.load();
+            file.write(reinterpret_cast<const char*>(&dataSize), 4);
             file.write(reinterpret_cast<const char*>(data.get()), dataSize);
         });
     }
@@ -348,6 +353,10 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
  */
 auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional<Snapshot>
 {
+    // 防御性上限，防止恶意文件耗尽内存
+    constexpr uint32_t kMaxEntries = 100000;
+    constexpr uint32_t kMaxDataSize = 100 * 1024 * 1024; // 100 MiB
+
     std::ifstream file(path, std::ios::binary);
     if (!file) {
         Log([&path]() -> std::string { return std::format(locale("读取快照文件失败：无法打开: {}"), path); });
@@ -389,6 +398,10 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
     // 条目数
     uint32_t entryCount = 0;
     file.read(reinterpret_cast<char*>(&entryCount), 4);
+    if (entryCount > kMaxEntries) {
+        Log([&path, entryCount, kMaxEntries]() -> std::string { return std::format(locale("读取快照文件失败：条目数 {} 超过上限 {}"), entryCount, kMaxEntries); });
+        return std::nullopt;
+    }
 
     Snapshot snap;
     snap.name = name;
@@ -407,6 +420,10 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
 
         uint32_t dataSize = 0;
         file.read(reinterpret_cast<char*>(&dataSize), 4);
+        if (dataSize > kMaxDataSize) {
+            Log([&path, &key, dataSize]() -> std::string { return std::format(locale("读取快照文件失败：条目 \"{}\" 数据大小 {} 超过上限"), key, dataSize); });
+            return std::nullopt;
+        }
 
         auto data = std::make_shared<uint8_t[]>(dataSize);
         file.read(reinterpret_cast<char*>(data.get()), dataSize);
@@ -415,7 +432,8 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
         snap.entries[key] = entry;
     }
 
-    if (!file && !file.eof()) {
+    // 检查读取是否中途失败（排除仅 EOF 的情况）
+    if (file.fail() && !file.eof()) {
         Log([&path]() -> std::string { return std::format(locale("读取快照文件失败：读取出错: {}"), path); });
         return std::nullopt;
     }
@@ -576,6 +594,10 @@ auto DataManager::PeekSnapshot(const std::string& path) -> std::optional<Snapsho
     // 条目数
     uint32_t entryCount = 0;
     file.read(reinterpret_cast<char*>(&entryCount), 4);
+    constexpr uint32_t kMaxPeekEntries = 100000;
+    if (entryCount > kMaxPeekEntries) {
+        return std::nullopt;
+    }
 
     SnapshotInfo info;
     info.name = name;
@@ -596,6 +618,10 @@ auto DataManager::PeekSnapshot(const std::string& path) -> std::optional<Snapsho
         file.read(reinterpret_cast<char*>(&type), 4);
         uint32_t dataSize = 0;
         file.read(reinterpret_cast<char*>(&dataSize), 4);
+        constexpr uint32_t kMaxPeekDataSize = 100 * 1024 * 1024;
+        if (dataSize > kMaxPeekDataSize) {
+            return std::nullopt;
+        }
         file.seekg(dataSize, std::ios::cur);
     }
 

@@ -26,10 +26,10 @@ Engine::Game g;
  *
  * @return int 默认是0,但程序真正的返回值在Game::ShutDown()里
  */
-auto main(const int argc, const char* argv[], const char* envp[]) -> int // NOLINT
+auto main(int argc, char* argv[]) -> int
 {
     Engine::Utils::Logger::Log("int main()", Engine::Utils::Logger::LogLevel::DEBUG);
-    Engine::Utils::Arg::MArg mp = Engine::Utils::Arg::FormatParam(argc, argv, envp);
+    Engine::Utils::Arg::MArg mp = Engine::Utils::Arg::FormatParam(argc, const_cast<const char**>(argv), nullptr);
     if (mp._dev_console) {
         return Engine::Utils::DevConsole::MainAct(mp);
     } else if (mp._help) {
@@ -42,6 +42,6 @@ auto main(const int argc, const char* argv[], const char* envp[]) -> int // NOLI
     g.MainLoop();
     g.ShutDown();
     lua_State* L = luaL_newstate();
-    luaL_openlibs(L);
-    luaL_dostring(L, "print(\"FUCK ME\")");
+    luaL_dostring(L, "print(\"AOSRPGGBSD shutdown complete\")");
+    lua_close(L);
 }

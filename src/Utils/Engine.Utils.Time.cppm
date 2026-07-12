@@ -16,7 +16,7 @@ auto LaunchTime = std::chrono::steady_clock::now();
  *
  * @return constexpr auto 从程序启动到现在的时间，单位为毫秒
  */
-inline constexpr auto GetAppRunningTime()
+inline auto GetAppRunningTime()
 {
     return std::chrono::duration<double>(
                std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - LaunchTime))
