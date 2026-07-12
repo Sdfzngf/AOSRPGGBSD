@@ -5,6 +5,7 @@
 module;
 
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <cstring>
 #include <format>
@@ -13,9 +14,11 @@ module;
 #include <limits>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <shared_mutex>
 #include <sys/stat.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #define ccb(a, b)                   \
     if constexpr (EnableCallback) { \
@@ -42,6 +45,30 @@ export namespace Engine::Utils::Data {
  */
 const uint8_t _version = 1;
 
+/**
+ * @brief 快照元数据（轻量，供 ListSnapshots 返回）
+ *
+ */
+struct SnapshotInfo {
+    std::string name; ///< 快照名称
+    std::chrono::system_clock::time_point created_at; ///< 创建时间戳
+    std::string description; ///< 描述
+    size_t entry_count; ///< 条目数
+    std::vector<std::string> keys; ///< 条目 key 列表
+};
+
+/**
+ * @brief 快照实体（内部使用）
+ *
+ */
+struct Snapshot {
+    std::string name;
+    std::chrono::system_clock::time_point created_at;
+    std::string description;
+    std::vector<std::string> keys;
+    std::unordered_map<std::string, std::shared_ptr<DataEntry>> entries; ///< key → DataEntry 浅拷贝
+};
+
 class DataManager {
 private:
     // 数据条目容器
@@ -49,11 +76,42 @@ private:
     // 读写锁
     mutable std::shared_mutex mtx;
 
+    // ── 快照相关成员 ──
+    std::unordered_map<std::string, Snapshot> snapshots_; ///< 所有快照
+    std::optional<std::string> active_rollback_; ///< 当前活动的延迟回滚快照名
+    std::unordered_set<std::string> rollback_pending_keys_; ///< 尚未触发替换的 key
+
+    /**
+     * @brief 从 .snap 文件解析快照（供 LoadSnapshot / LoadAndRestore 复用）
+     *
+     * @param path 快照文件路径
+     * @return std::optional<Snapshot> 解析成功返回快照，失败返回 nullopt
+     */
+    auto ReadSnapshotFromFile(const std::string& path) -> std::optional<Snapshot>;
+
+    /**
+     * @brief 确保 Data[key] 是唯一的（不被任何快照共享）
+     *
+     * 若 shared_ptr<DataEntry> 的 use_count > 1（快照持有引用），
+     * 则深拷贝整个 DataEntry 并替换。
+     *
+     * @param key 条目名
+     */
+    auto EnsureUnique(const std::string& key) -> void;
+
 public:
     auto InsertEntry(const std::string& key, std::shared_ptr<DataEntry> entry) -> int;
     auto InsertEntry(std::shared_ptr<DataEntry> entry) -> int;
 
-    auto GetEntry(const std::string& key) const -> std::shared_ptr<DataEntry>;
+    /**
+     * @brief 获取数据条目（含延迟回滚触发）
+     *
+     * 若 key 处于活动回滚的 pending 集合中，则先替换为快照版本再返回。
+     *
+     * @param key 数据条目的名称
+     * @return std::shared_ptr<DataEntry> 指向数据条目的智能指针，如果未找到则返回nullptr
+     */
+    auto GetEntry(const std::string& key) -> std::shared_ptr<DataEntry>;
 
     auto RemoveEntry(const std::string& key) -> bool;
 
@@ -77,6 +135,145 @@ public:
             entrys.push_back(j.first);
         }
         return entrys;
+    }
+
+    // ── 快照接口 ──
+
+    /**
+     * @brief 创建 CoW 快照
+     *
+     * 对指定 keys 建立快照，存储 shared_ptr<DataEntry> 浅拷贝（O(k)）。
+     * 若处于活动回滚期间且 key 仍在 pending 中，则取活动回滚快照的旧数据。
+     *
+     * @param name 全局唯一快照名
+     * @param keys 要快照的条目 key 列表
+     * @param desc 可选描述
+     * @return true 成功
+     * @return false 名称重复
+     */
+    auto CreateSnapshot(const std::string& name, const std::vector<std::string>& keys, const std::string& desc = "") -> bool;
+
+    /**
+     * @brief 启动延迟回滚（O(1)）
+     *
+     * 标记 active_rollback_，将快照覆盖的 key 填入 pending 集合。
+     * 实际替换推迟到 GetEntry / Write 首次访问时触发。
+     * 同一时刻只能有一个活动回滚。
+     *
+     * @param name 快照名
+     * @return true 成功
+     * @return false 快照不存在或已有活动回滚
+     */
+    auto Rollback(const std::string& name) -> bool;
+
+    /**
+     * @brief 删除快照，释放 shared_ptr 引用
+     *
+     * @param name 快照名
+     * @return true 成功
+     * @return false 快照不存在
+     */
+    auto DeleteSnapshot(const std::string& name) -> bool;
+
+    /**
+     * @brief 将快照持久化到独立文件
+     *
+     * @param name 快照名
+     * @param path 输出文件路径
+     * @return true 成功
+     * @return false 快照不存在或写入失败
+     */
+    auto SaveSnapshot(const std::string& name, const std::string& path) -> bool;
+
+    /**
+     * @brief 从持久化文件加载快照到内存
+     *
+     * @param path 快照文件路径
+     * @return true 成功
+     * @return false 文件不存在或格式错误
+     */
+    auto LoadSnapshot(const std::string& path) -> bool;
+
+    /**
+     * @brief 列出所有快照的元数据
+     *
+     * @return std::vector<SnapshotInfo>
+     */
+    auto ListSnapshots() -> std::vector<SnapshotInfo>;
+
+    /**
+     * @brief 取消当前活动回滚（清除 pending 状态）
+     *
+     */
+    auto CancelRollback() -> void;
+
+    // ── 存档便捷接口 ──
+
+    /**
+     * @brief 创建全量快照（自动涵盖当前所有条目）
+     *
+     * @param name 全局唯一快照名
+     * @param desc 可选描述
+     * @return true 成功
+     * @return false 名称重复
+     */
+    auto CreateSnapshotAll(const std::string& name, const std::string& desc = "") -> bool;
+
+    /**
+     * @brief 加载快照文件并立即恢复到该状态（一步到位，非延迟）
+     *
+     * 读取 .snap 文件，解析后直接替换所有条目，同时保存快照到内存。
+     *
+     * @param path 快照文件路径
+     * @return true 成功
+     * @return false 文件不存在或格式错误
+     */
+    auto LoadAndRestore(const std::string& path) -> bool;
+
+    /**
+     * @brief 纯只读预览快照文件元数据（不加载到内存，不加锁）
+     *
+     * @param path 快照文件路径
+     * @return std::optional<SnapshotInfo> 成功返回元数据，失败返回 nullopt
+     */
+    static auto PeekSnapshot(const std::string& path) -> std::optional<SnapshotInfo>;
+
+    /**
+     * @brief 带 CoW 保护的写入操作
+     *
+     * 自动处理延迟回滚触发和写时复制，然后委托 DataEntry::Write。
+     *
+     * @tparam F 回调类型
+     * @param key 条目名
+     * @param func 写入回调
+     * @return 回调的返回值
+     */
+    template <typename F>
+    auto Write(const std::string& key, F&& func) -> decltype(auto)
+    {
+        std::unique_lock lock(mtx);
+
+        // 1. 处理延迟回滚
+        if (active_rollback_.has_value() && rollback_pending_keys_.contains(key)) {
+            auto& snap = snapshots_[*active_rollback_];
+            auto entry_it = snap.entries.find(key);
+            if (entry_it != snap.entries.end()) {
+                Data[key] = entry_it->second;
+            }
+            rollback_pending_keys_.erase(key);
+
+            // pending 全部处理完毕 → 自动清除活动回滚
+            if (rollback_pending_keys_.empty()) {
+                active_rollback_.reset();
+            }
+        }
+
+        // 2. 确保 CoW 唯一性
+        EnsureUnique(key);
+
+        // 3. 委托写入
+        auto entry = Data.at(key);
+        return entry->Write(std::forward<F>(func));
     }
 
     /**
@@ -254,4 +451,4 @@ public:
         return 0;
     }
 };
-}
+} // namespace Engine::Utils::Data
