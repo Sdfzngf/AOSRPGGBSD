@@ -168,7 +168,7 @@ auto DataManager::CreateSnapshot(const std::string& name, const std::vector<std:
 {
     std::unique_lock lock(mtx);
     if (snapshots_.contains(name)) {
-        Log([&name]() -> std::string { return std::format(locale("快照名称已存在: {}"), name); });
+        Log([&name]() -> std::string { return Engine::i18n::fmt("快照名称已存在: {}", name); });
         return false;
     }
 
@@ -196,7 +196,7 @@ auto DataManager::CreateSnapshot(const std::string& name, const std::vector<std:
     }
 
     snapshots_[name] = std::move(snap);
-    Log([&name]() -> std::string { return std::format(locale("快照已创建: {}"), name); });
+    Log([&name]() -> std::string { return Engine::i18n::fmt("快照已创建: {}", name); });
     return true;
 }
 
@@ -216,11 +216,11 @@ auto DataManager::Rollback(const std::string& name) -> bool
     std::unique_lock lock(mtx);
     auto it = snapshots_.find(name);
     if (it == snapshots_.end()) {
-        Log([&name]() -> std::string { return std::format(locale("回滚失败：快照不存在: {}"), name); });
+        Log([&name]() -> std::string { return Engine::i18n::fmt("回滚失败：快照不存在: {}", name); });
         return false;
     }
     if (active_rollback_.has_value()) {
-        Log([&name, this]() -> std::string { return std::format(locale("回滚失败：已有活动回滚 {}，当前请求: {}"), *active_rollback_, name); });
+        Log([&name, this]() -> std::string { return Engine::i18n::fmt("回滚失败：已有活动回滚 {}，当前请求: {}", *active_rollback_, name); });
         return false;
     }
 
@@ -228,7 +228,7 @@ auto DataManager::Rollback(const std::string& name) -> bool
     for (const auto& key : it->second.keys) {
         rollback_pending_keys_.insert(key);
     }
-    Log([&name, &it]() -> std::string { return std::format(locale("已启动延迟回滚: {}，pending {} 个条目"), name, it->second.keys.size()); });
+    Log([&name, &it]() -> std::string { return Engine::i18n::fmt("已启动延迟回滚: {}，pending {} 个条目", name, it->second.keys.size()); });
     return true;
 }
 
@@ -248,7 +248,7 @@ auto DataManager::DeleteSnapshot(const std::string& name) -> bool
     }
 
     snapshots_.erase(it);
-    Log([&name]() -> std::string { return std::format(locale("快照已删除: {}"), name); });
+    Log([&name]() -> std::string { return Engine::i18n::fmt("快照已删除: {}", name); });
     return true;
 }
 
@@ -282,14 +282,14 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
     std::shared_lock lock(mtx);
     auto it = snapshots_.find(name);
     if (it == snapshots_.end()) {
-        Log([&name]() -> std::string { return std::format(locale("保存快照失败：快照不存在: {}"), name); });
+        Log([&name]() -> std::string { return Engine::i18n::fmt("保存快照失败：快照不存在: {}", name); });
         return false;
     }
 
     const auto& snap = it->second;
     std::ofstream file(path, std::ios::binary | std::ios::trunc);
     if (!file) {
-        Log([&path]() -> std::string { return std::format(locale("保存快照失败：无法打开文件: {}"), path); });
+        Log([&path]() -> std::string { return Engine::i18n::fmt("保存快照失败：无法打开文件: {}", path); });
         return false;
     }
 
@@ -301,7 +301,7 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
     file.write(reinterpret_cast<const char*>(&version), 1);
 
     if (snap.name.size() > UINT8_MAX) {
-        Log([&name]() -> std::string { return std::format(locale("警告：快照名称过长将被截断: {}"), name); });
+        Log([&name]() -> std::string { return Engine::i18n::fmt("警告：快照名称过长将被截断: {}", name); });
     }
     uint8_t nameLen = static_cast<uint8_t>(snap.name.size());
     file.write(reinterpret_cast<const char*>(&nameLen), 1);
@@ -322,7 +322,7 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
     // Entries
     for (const auto& [key, entry] : snap.entries) {
         if (key.size() > UINT8_MAX) {
-            Log([&key]() -> std::string { return std::format(locale("警告：条目名称过长将被截断: {}"), key); });
+            Log([&key]() -> std::string { return Engine::i18n::fmt("警告：条目名称过长将被截断: {}", key); });
         }
         uint8_t keyLen = static_cast<uint8_t>(key.size());
         file.write(reinterpret_cast<const char*>(&keyLen), 1);
@@ -339,7 +339,7 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
     }
 
     file.close();
-    Log([&name, &path]() -> std::string { return std::format(locale("快照 {} 已保存到: {}"), name, path); });
+    Log([&name, &path]() -> std::string { return Engine::i18n::fmt("快照 {} 已保存到: {}", name, path); });
     return true;
 }
 
@@ -359,7 +359,7 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
 
     std::ifstream file(path, std::ios::binary);
     if (!file) {
-        Log([&path]() -> std::string { return std::format(locale("读取快照文件失败：无法打开: {}"), path); });
+        Log([&path]() -> std::string { return Engine::i18n::fmt("读取快照文件失败：无法打开: {}", path); });
         return std::nullopt;
     }
 
@@ -367,7 +367,7 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
     char magic[4];
     file.read(magic, 4);
     if (!file || magic[0] != 'D' || magic[1] != 'S' || magic[2] != 'N' || magic[3] != 'P') {
-        Log([&path]() -> std::string { return std::format(locale("读取快照文件失败：格式无效: {}"), path); });
+        Log([&path]() -> std::string { return Engine::i18n::fmt("读取快照文件失败：格式无效: {}", path); });
         return std::nullopt;
     }
 
@@ -375,7 +375,7 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
     uint8_t version = 0;
     file.read(reinterpret_cast<char*>(&version), 1);
     if (!file || version != 1) {
-        Log([&path]() -> std::string { return std::format(locale("读取快照文件失败：不支持的版本: {}"), path); });
+        Log([&path]() -> std::string { return Engine::i18n::fmt("读取快照文件失败：不支持的版本: {}", path); });
         return std::nullopt;
     }
 
@@ -399,7 +399,7 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
     uint32_t entryCount = 0;
     file.read(reinterpret_cast<char*>(&entryCount), 4);
     if (entryCount > kMaxEntries) {
-        Log([&path, entryCount, kMaxEntries]() -> std::string { return std::format(locale("读取快照文件失败：条目数 {} 超过上限 {}"), entryCount, kMaxEntries); });
+        Log([&path, entryCount, kMaxEntries]() -> std::string { return Engine::i18n::fmt("读取快照文件失败：条目数 {} 超过上限 {}", entryCount, kMaxEntries); });
         return std::nullopt;
     }
 
@@ -421,7 +421,7 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
         uint32_t dataSize = 0;
         file.read(reinterpret_cast<char*>(&dataSize), 4);
         if (dataSize > kMaxDataSize) {
-            Log([&path, &key, dataSize]() -> std::string { return std::format(locale("读取快照文件失败：条目 \"{}\" 数据大小 {} 超过上限"), key, dataSize); });
+            Log([&path, &key, dataSize]() -> std::string { return Engine::i18n::fmt("读取快照文件失败：条目 \"{}\" 数据大小 {} 超过上限", key, dataSize); });
             return std::nullopt;
         }
 
@@ -434,7 +434,7 @@ auto DataManager::ReadSnapshotFromFile(const std::string& path) -> std::optional
 
     // 检查读取是否中途失败（排除仅 EOF 的情况）
     if (file.fail() && !file.eof()) {
-        Log([&path]() -> std::string { return std::format(locale("读取快照文件失败：读取出错: {}"), path); });
+        Log([&path]() -> std::string { return Engine::i18n::fmt("读取快照文件失败：读取出错: {}", path); });
         return std::nullopt;
     }
 
@@ -458,7 +458,7 @@ auto DataManager::LoadSnapshot(const std::string& path) -> bool
 
     auto name = snap->name;
     snapshots_[name] = std::move(*snap);
-    Log([&name, &path]() -> std::string { return std::format(locale("快照 {} 已从文件加载: {}"), name, path); });
+    Log([&name, &path]() -> std::string { return Engine::i18n::fmt("快照 {} 已从文件加载: {}", name, path); });
     return true;
 }
 
@@ -492,7 +492,7 @@ auto DataManager::CancelRollback() -> void
 {
     std::unique_lock lock(mtx);
     if (active_rollback_.has_value()) {
-        Log([this]() -> std::string { return std::format(locale("已取消活动回滚: {}"), *active_rollback_); });
+        Log([this]() -> std::string { return Engine::i18n::fmt("已取消活动回滚: {}", *active_rollback_); });
         active_rollback_.reset();
         rollback_pending_keys_.clear();
     }
@@ -528,7 +528,7 @@ auto DataManager::LoadAndRestore(const std::string& path) -> bool
     std::unique_lock lock(mtx);
     auto snap = ReadSnapshotFromFile(path);
     if (!snap.has_value()) {
-        Log([&path]() -> std::string { return std::format(locale("加载存档失败：{}"), path); });
+        Log([&path]() -> std::string { return Engine::i18n::fmt("加载存档失败：{}", path); });
         return false;
     }
 
@@ -538,7 +538,7 @@ auto DataManager::LoadAndRestore(const std::string& path) -> bool
     }
 
     auto name = snap->name;
-    Log([&name, &path]() -> std::string { return std::format(locale("存档 {} 已加载并恢复: {}"), name, path); });
+    Log([&name, &path]() -> std::string { return Engine::i18n::fmt("存档 {} 已加载并恢复: {}", name, path); });
 
     // 清除活动回滚状态（如果存在）
     active_rollback_.reset();

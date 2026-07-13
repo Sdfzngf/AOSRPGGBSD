@@ -5,6 +5,7 @@
 module;
 
 #include <algorithm>
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <functional>
@@ -144,7 +145,7 @@ void Add(const auto& args, replxx::Replxx& replxx)
 
         dataBuffer = LoadFileBytes(path);
         if (!dataBuffer && !std::ifstream(path, std::ios::binary)) {
-            replxx.print("%s\n", std::format(locale("无法打开文件: {}"), path).c_str()); // NOLINT
+            replxx.print("%s\n", Engine::i18n::fmt("无法打开文件: {}", path).c_str()); // NOLINT
             return;
         }
 
@@ -152,7 +153,7 @@ void Add(const auto& args, replxx::Replxx& replxx)
         file.seekg(0, std::ios::end);
         const auto fileSize = file.tellg();
         if (fileSize < 0) {
-            replxx.print("%s\n", std::format(locale("无法读取文件大小: {}"), path).c_str()); // NOLINT
+            replxx.print("%s\n", Engine::i18n::fmt("无法读取文件大小: {}", path).c_str()); // NOLINT
             return;
         }
         dataSize = static_cast<uint32_t>(fileSize);
@@ -174,7 +175,7 @@ void Add(const auto& args, replxx::Replxx& replxx)
 
     auto entry = std::make_shared<Engine::Utils::Data::DataEntry>(name, dataSize, type, dataBuffer);
     ddm.InsertEntry(name, entry);
-    replxx.print("%s\n", std::format(locale("已添加条目: {}"), name).c_str()); // NOLINT
+    replxx.print("%s\n", Engine::i18n::fmt("已添加条目: {}", name).c_str()); // NOLINT
 }
 
 void SaveDB(const auto& args, replxx::Replxx& replxx)
@@ -186,7 +187,7 @@ void SaveDB(const auto& args, replxx::Replxx& replxx)
     std::string desc = args.size() >= 3 ? args.at(2) : std::string();
     int r = ddm.SaveDB(args.at(1), desc);
     if (r != 0)
-        replxx.print("%s\n", std::format(locale("保存失败: {}"), r).c_str()); // NOLINT
+        replxx.print("%s\n", Engine::i18n::fmt("保存失败: {}", r).c_str()); // NOLINT
     else
         replxx.print("%s\n", std::string(locale("保存成功")).c_str()); // NOLINT
 }
@@ -248,7 +249,7 @@ public:
             }
             int r = ddm.MountDB(args.at(1));
             if (r != 0)
-                replxx.print("%s\n", std::format(locale("加载失败: {}"), r).c_str()); // NOLINT
+                replxx.print("%s\n", Engine::i18n::fmt("加载失败: {}", r).c_str()); // NOLINT
             else
                 replxx.print("%s\n", std::string(locale("加载成功")).c_str()); // NOLINT
         };
@@ -262,16 +263,16 @@ public:
             }
             auto ent = ddm.GetEntry(args.at(1));
             if (!ent) {
-                replxx.print("%s\n", std::format(locale("未找到条目: {}"), args.at(1)).c_str()); // NOLINT
+                replxx.print("%s\n", Engine::i18n::fmt("未找到条目: {}", args.at(1)).c_str()); // NOLINT
                 return;
             }
             try {
                 const auto t = ent->Type.load();
                 std::string typeDisp = std::format("{}{}{}", TypeColorFromIndex(t), TypeNameFromIndex(t), "\x1b[0m");
-                replxx.print("%s\n", std::format(locale("类型: {}"), typeDisp).c_str()); // NOLINT
+                replxx.print("%s\n", Engine::i18n::fmt("类型: {}", typeDisp).c_str()); // NOLINT
                 ent->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
                     uint32_t sz = ent->GetSize();
-                    replxx.print("%s\n", std::format(locale("条目: {} 大小: {} 字节"), args.at(1), sz).c_str()); // NOLINT
+                    replxx.print("%s\n", Engine::i18n::fmt("条目: {} 大小: {} 字节", args.at(1), sz).c_str()); // NOLINT
                     auto show = std::min(sz, static_cast<uint32_t>(kMaxShowBytes));
 
                     // 先探测是否可能是 UTF-8 文本且大多数字节可打印
@@ -281,7 +282,7 @@ public:
                         std::string colored = std::format("\x1b[32m{}\x1b[0m", s);
                         replxx.print("%s\n", colored.c_str()); // NOLINT
                         if (show < sz)
-                            replxx.print("%s\n", std::format(locale("... (显示 {} 字节 / 总共 {} 字节)"), show, sz).c_str()); // NOLINT
+                            replxx.print("%s\n", Engine::i18n::fmt("... (显示 {} 字节 / 总共 {} 字节)", show, sz).c_str()); // NOLINT
                     } else {
                         // 打印 hex 摘要，用黄色高亮
                         std::ostringstream oss;
@@ -296,7 +297,7 @@ public:
                         std::string colored = std::format("\x1b[33m{}\x1b[0m", hexs);
                         replxx.print("%s\n", colored.c_str()); // NOLINT
                         if (show < sz)
-                            replxx.print("%s\n", std::format(locale("... (hex 显示 {} 字节 / 总共 {} 字节)"), hexShow, sz).c_str()); // NOLINT
+                            replxx.print("%s\n", Engine::i18n::fmt("... (hex 显示 {} 字节 / 总共 {} 字节)", hexShow, sz).c_str()); // NOLINT
                     }
                 });
             } catch (const std::exception& e) {
@@ -310,9 +311,9 @@ public:
             }
             bool ok = ddm.RemoveEntry(args.at(1));
             if (ok)
-                replxx.print("%s\n", std::format(locale("已删除: {}"), args.at(1)).c_str()); // NOLINT
+                replxx.print("%s\n", Engine::i18n::fmt("已删除: {}", args.at(1)).c_str()); // NOLINT
             else
-                replxx.print("%s\n", std::format(locale("未找到条目: {}"), args.at(1)).c_str()); // NOLINT
+                replxx.print("%s\n", Engine::i18n::fmt("未找到条目: {}", args.at(1)).c_str()); // NOLINT
         };
 
         std::vector<std::string> commandNames;
@@ -387,7 +388,7 @@ public:
             if (it != handlers.end()) {
                 it->second(args);
             } else {
-                replxx.print("%s\n", std::format(locale("未知的命令: {}，输入 \"help\" 获取帮助信息"), cmd).c_str()); // NOLINT
+                replxx.print("%s\n", Engine::i18n::fmt("未知的命令: {}，输入 \"help\" 获取帮助信息", cmd).c_str()); // NOLINT
             }
         }
         return 0;
@@ -396,7 +397,7 @@ public:
     {
         if (mp._pack) {
             if (mp._pack_arg.size() < 3) {
-                Log(std::format(locale("{0}: 至少需要 {1} 个参数"), "pack", "3"), Logger::LogLevel::ERROR);
+                Log(Engine::i18n::fmt("{0}: 至少需要 {1} 个参数", "pack", "3"), Logger::LogLevel::ERROR);
                 return 1;
             }
             int j = 0;
@@ -407,9 +408,11 @@ public:
                 }
                 std::fstream file(i, std::ios_base::in);
                 if (!file) {
-                    Log(std::format(locale("{0}: 无法打开文件 {1}"), "pack", i), Logger::LogLevel::ERROR);
+                    Log(Engine::i18n::fmt("{0}: 无法打开文件 {1}", "pack", i), Logger::LogLevel::ERROR);
                     return 2;
                 }
+                // 获取 .rres 文件所在目录，用于解析 --file 相对路径
+                const std::filesystem::path rresDir = std::filesystem::absolute(i).parent_path();
                 std::string line;
                 while (std::getline(file, line)) {
                     const char* cinput = line.c_str();
@@ -425,6 +428,13 @@ public:
                     auto args = parseCommandLine(line);
                     if (args.empty())
                         continue;
+
+                    // 将 --file 的相对路径基于 .rres 文件目录解析
+                    for (size_t a = 2; a + 1 < args.size(); ++a) {
+                        if ((args[a] == "--file" || args[a] == "-f") && !args[a + 1].empty() && args[a + 1][0] != '/') {
+                            args[a + 1] = (rresDir / args[a + 1]).lexically_normal().string();
+                        }
+                    }
 
                     const std::string& cmd = args.front();
                     if (cmd == "add") {

@@ -6,3 +6,4 @@ build/
 *.wav
 *.ogg
 .codewhale
+__pycache__/

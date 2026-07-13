@@ -30,7 +30,7 @@ auto FormatParam(const int argc, const char* argv[], const char* envp[]) -> MArg
             if (ppara == "pack")
                 Mp._pack_arg.emplace_back(argv[i]);
             else
-                Engine::Utils::Logger::Log(std::format(Engine::i18n::locale("未知参数 \"{}\""), argv[i]), Engine::Utils::Logger::LogLevel::WARN);
+                Engine::Utils::Logger::Log(Engine::i18n::fmt("未知参数 \"{}\"", argv[i]), Engine::Utils::Logger::LogLevel::WARN);
         }
     }
     return Mp;

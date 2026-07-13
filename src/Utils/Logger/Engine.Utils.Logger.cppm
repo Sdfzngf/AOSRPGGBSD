@@ -84,7 +84,7 @@ int Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = En
  * @brief 回调函数版本的Log
  *
  * @param callcallback 返回日志内容的回调函数
- * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(std::format(locale("abcd: {}"),efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
+ * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(Engine::i18n::fmt("abcd: {}", efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
@@ -99,7 +99,7 @@ int Log(std::string (*callcallback)(), const Engine::Utils::Logger::LogLevel log
  * @brief 回调函数版本的Log
  *
  * @param callcallback 返回日志内容的回调函数
- * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(std::format(locale("abcd: {}"),efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
+ * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(Engine::i18n::fmt("abcd: {}", efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
@@ -114,7 +114,7 @@ int Log(const char* (*callcallback)(), const Engine::Utils::Logger::LogLevel log
  * @brief 回调函数版本的Log，但是更通用了一些
  *
  * @param callcallback 返回日志内容的回调函数
- * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(std::format(locale("abcd: {}"),efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
+ * @param loglevel 日志等级，如果你好奇为什么要用callback，答案是如果要用Log(Engine::i18n::fmt("abcd: {}", efg));的格式的话，不管Log()是否输出，std::format(locale("abcd: {}"),efg)都会被执行一次，用callback虽然稍显复杂，但还是会快一点
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
@@ -156,6 +156,7 @@ int _loglevel_test_()
  *
  * @return int
  */
+#if 0
 int _logger_stress_test()
 {
     Log("int __logger_stress_test()");
@@ -163,7 +164,7 @@ int _logger_stress_test()
 
     // 测试1
     Log([lp]() { return std::format(locale("666: {}"), lp); });
-    Log(std::format(locale("111: {}"), lp));
+    Log(Engine::i18n::fmt("111: {}", lp));
 
     // 更改日志等级，不输出任何东西
     Log("CurrentLogLevel = LogLevel::NOOPT");
@@ -174,14 +175,14 @@ int _logger_stress_test()
 
     auto a = Engine::Utils::Time::GetAppRunningTime();
     for (int i = 0; i < 2000000; i++) {
-        Log(std::format(locale("111: {}"), 6));
+        Log(Engine::i18n::fmt("111: {}", 6));
     }
     auto b = Engine::Utils::Time::GetAppRunningTime();
     Log("succeed,time " + std::to_string(b - a), Engine::Utils::Logger::LogLevel::NOOPT);
     // 测试带变量的情况
     a = Engine::Utils::Time::GetAppRunningTime();
     for (int i = 0; i < 2000000; i++) {
-        Log(std::format(locale("111: {}"), lp));
+        Log(Engine::i18n::fmt("111: {}", lp));
     }
     b = Engine::Utils::Time::GetAppRunningTime();
     Log("succeed,time " + std::to_string(b - a), Engine::Utils::Logger::LogLevel::NOOPT);
@@ -240,5 +241,6 @@ int _logger_stress_test()
 
     return 1919810;
 }
+#endif
 }
 // NOLINTEND

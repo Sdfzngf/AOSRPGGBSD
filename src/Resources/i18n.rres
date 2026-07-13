@@ -1,0 +1,2 @@
+add i18n/zh-CN --file "zh-CN.json" String
+add i18n/en-US --file "en-US.json" String

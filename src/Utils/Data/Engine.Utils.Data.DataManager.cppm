@@ -307,7 +307,7 @@ public:
             break;
         default:
             unsigned char a = header.version;
-            Log([a]() -> std::string { return std::format(locale("不支持的DB版本: {}"), a); });
+            Log([a]() -> std::string { return Engine::i18n::fmt("不支持的DB版本: {}", a); });
             ccb(std::string(locale("加载失败")), 0);
             return 2;
         }
@@ -322,7 +322,7 @@ public:
              *
              */
             for (uint32_t i = 0; i < header.numberOfEntrys; i++) {
-                ccb(std::format(locale("正在加载数据条目 {} / {}"), i + 1, header.numberOfEntrys), header.numberOfEntrys == 0 ? 100.0f : float(i + 1) / header.numberOfEntrys * 100);
+                ccb(Engine::i18n::fmt("正在加载数据条目 {} / {}", i + 1, header.numberOfEntrys), header.numberOfEntrys == 0 ? 100.0f : float(i + 1) / header.numberOfEntrys * 100);
                 DB_DataEntry_Header entryheader;
                 if ((ms >> entryheader) != 0) {
                     throw std::runtime_error("DB entry header read failed");
@@ -344,7 +344,7 @@ public:
                     throw std::runtime_error("DB entry data read failed");
                 }
                 std::string name_s(reinterpret_cast<const char*>(namep.get()), entryheader.NameSize);
-                Log([&name_s, &i, &header]() -> std::string { return std::format(locale("加载数据条目\"{}\"，进度 {} / {}"), name_s, i + 1, header.numberOfEntrys); });
+                Log([&name_s, &i, &header]() -> std::string { return Engine::i18n::fmt("加载数据条目\"{}\"，进度 {} / {}", name_s, i + 1, header.numberOfEntrys); });
                 Data[name_s] = std::make_shared<DataEntry>(name_s, data.size, entryheader.Type, data.block);
             }
         } catch (...) {
@@ -368,32 +368,32 @@ public:
     template <bool EnableCallback = false>
     auto MountDB(const std::string& path, const std::function<void(std::string, float)>& progresscallback = nullptr) -> int
     {
-        ccb(std::format(locale("尝试将文件 \"{}\" 加载到内存"), path), 0);
-        Log([&path]() -> std::string { return std::format(locale("尝试将文件 \"{}\" 加载到内存"), path); });
+        ccb(Engine::i18n::fmt("尝试将文件 \"{}\" 加载到内存", path), 0);
+        Log([&path]() -> std::string { return Engine::i18n::fmt("尝试将文件 \"{}\" 加载到内存", path); });
         std::ifstream file;
         file.open(path, std::ifstream::binary);
         if (!file) {
-            Log([path]() -> std::string { return std::format(locale("无法打开文件\"{}\""), path); });
-            ccb(std::format(locale("无法打开文件\"{}\""), path), 0);
+            Log([path]() -> std::string { return Engine::i18n::fmt("无法打开文件\"{}\"", path); });
+            ccb(Engine::i18n::fmt("无法打开文件\"{}\"", path), 0);
             return 1;
         }
         struct stat statbuf { };
 
         if (stat(path.c_str(), &statbuf) != 0 || statbuf.st_size < 0) {
-            Log([path]() -> std::string { return std::format(locale("无法读取文件大小\"{}\""), path); });
-            ccb(std::format(locale("无法读取文件大小\"{}\""), path), 0);
+            Log([path]() -> std::string { return Engine::i18n::fmt("无法读取文件大小\"{}\"", path); });
+            ccb(Engine::i18n::fmt("无法读取文件大小\"{}\"", path), 0);
             return 1;
         }
         auto fileSize = static_cast<size_t>(statbuf.st_size);
         std::shared_ptr<uint8_t[]> mem = std::make_shared<uint8_t[]>(fileSize);
         file.read(reinterpret_cast<char*>(mem.get()), static_cast<std::streamsize>(fileSize));
         if (!file && fileSize != 0) {
-            Log([path]() -> std::string { return std::format(locale("读取文件\"{}\"到内存时失败"), path); });
-            ccb(std::format(locale("读取文件\"{}\"到内存时失败"), path), 0);
+            Log([path]() -> std::string { return Engine::i18n::fmt("读取文件\"{}\"到内存时失败", path); });
+            ccb(Engine::i18n::fmt("读取文件\"{}\"到内存时失败", path), 0);
             return 1;
         }
-        ccb(std::format(locale("成功将文件 \"{}\" 加载到内存"), path), 10);
-        Log([&path]() -> std::string { return std::format(locale("成功将文件 \"{}\" 加载到内存"), path); });
+        ccb(Engine::i18n::fmt("成功将文件 \"{}\" 加载到内存", path), 10);
+        Log([&path]() -> std::string { return Engine::i18n::fmt("成功将文件 \"{}\" 加载到内存", path); });
         file.close();
         return MountDB_memory<EnableCallback>(mem, fileSize, progresscallback);
     }
@@ -413,14 +413,14 @@ public:
         ccb(std::string(locale("尝试保存当前数据库")), 1);
         std::fstream file(path, std::ios::binary | std::ios::out | std::ios::trunc);
         if (!file) {
-            ccb(std::format(locale("无法打开文件\"{}\""), path), 1);
-            Log([path]() -> std::string { return std::format(locale("无法打开文件\"{}\""), path); });
+            ccb(Engine::i18n::fmt("无法打开文件\"{}\"", path), 1);
+            Log([path]() -> std::string { return Engine::i18n::fmt("无法打开文件\"{}\"", path); });
             return 1;
         }
         DB_Header dbh;
         if (desc.length() >= 503) {
-            ccb(std::format(locale("DB文件的描述过长\"{}\""), path), 1);
-            Log([path]() -> std::string { return std::format(locale("DB文件的描述过长\"{}\""), path); });
+            ccb(Engine::i18n::fmt("DB文件的描述过长\"{}\"", path), 1);
+            Log([path]() -> std::string { return Engine::i18n::fmt("DB文件的描述过长\"{}\"", path); });
             return 2;
         }
         auto fsize = Data.size();
@@ -430,18 +430,18 @@ public:
         file.write(reinterpret_cast<char*>(&dbh), sizeof(dbh));
         int i = 1;
         for (const auto& pai : Data) {
-            ccb(std::format(locale("保存数据 {} / {}"), i, dbh.numberOfEntrys), float(i + 1) / dbh.numberOfEntrys * 100);
+            ccb(Engine::i18n::fmt("保存数据 {} / {}", i, dbh.numberOfEntrys), float(i + 1) / dbh.numberOfEntrys * 100);
             DB_DataEntry_Header entryh;
             if (pai.first.size() > std::numeric_limits<uint8_t>::max()) {
-                ccb(std::format(locale("数据条目名称过长\"{}\""), pai.first), 1);
-                Log([&pai]() -> std::string { return std::format(locale("数据条目名称过长\"{}\""), pai.first); });
+                ccb(Engine::i18n::fmt("数据条目名称过长\"{}\"", pai.first), 1);
+                Log([&pai]() -> std::string { return Engine::i18n::fmt("数据条目名称过长\"{}\"", pai.first); });
                 return 2;
             }
             entryh.NameSize = pai.first.size();
             entryh.Size = pai.second.get()->GetSize();
             entryh.Type = pai.second.get()->Type;
             std::string nn = pai.first;
-            Log([&nn, &i, &dbh]() -> std::string { return std::format(locale("保存数据条目\"{}\"，进度 {} / {}"), nn, i, dbh.numberOfEntrys); });
+            Log([&nn, &i, &dbh]() -> std::string { return Engine::i18n::fmt("保存数据条目\"{}\"，进度 {} / {}", nn, i, dbh.numberOfEntrys); });
             file.write(reinterpret_cast<const char*>(&entryh), sizeof(entryh));
             file.write(nn.c_str(), entryh.NameSize);
             file.write(reinterpret_cast<const char*>(pai.second.get()->Data.load().get()), entryh.Size);
