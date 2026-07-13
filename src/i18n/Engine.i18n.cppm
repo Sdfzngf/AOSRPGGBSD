@@ -20,7 +20,7 @@ export namespace Engine::i18n {
  * @param lang 语言代码，如 "zh-CN"、"en-US"
  * @param json_content 完整的 JSON 键值对字符串
  */
-void Init(const std::string& lang, const std::string& json_content);
+auto Init(const std::string& lang, const std::string& json_content) -> void;
 
 /**
  * @brief 运行时切换语言
@@ -28,7 +28,7 @@ void Init(const std::string& lang, const std::string& json_content);
  * @param lang 语言代码
  * @param json_content 完整的 JSON 键值对字符串
  */
-void SwitchLanguage(const std::string& lang, const std::string& json_content);
+auto SwitchLanguage(const std::string& lang, const std::string& json_content) -> void;
 
 /**
  * @brief 返回当前语言代码
@@ -58,13 +58,13 @@ auto locale(const char* text) -> std::string;
 template <typename... Args>
 auto fmt(const std::string& key, Args&&... args) -> std::string
 {
-    return std::vformat(locale(key), std::make_format_args(args...));
+    return std::vformat(locale(key), std::make_format_args(std::forward<Args>(args)...));
 }
 
 template <typename... Args>
 auto fmt(const char* key, Args&&... args) -> std::string
 {
-    return std::vformat(locale(key), std::make_format_args(args...));
+    return std::vformat(locale(key), std::make_format_args(std::forward<Args>(args)...));
 }
 
 } // namespace Engine::i18n

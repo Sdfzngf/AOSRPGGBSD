@@ -4,7 +4,6 @@
  */
 module;
 
-#include <format>
 #include <functional>
 #include <ranges>
 #include <unordered_map>

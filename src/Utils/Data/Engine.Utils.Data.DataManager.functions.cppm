@@ -60,7 +60,7 @@ auto DataManager::EnsureUnique(const std::string& key) -> void
     // 深拷贝数据
     uint32_t sz = old->Size.load();
     auto newData = std::make_shared<uint8_t[]>(sz);
-    old->Read([&](const std::shared_ptr<uint8_t[]>& data) {
+    old->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
         memcpy(newData.get(), data.get(), sz);
     });
     newEntry->Data.store(newData);
@@ -303,20 +303,20 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
     if (snap.name.size() > UINT8_MAX) {
         Log([&name]() -> std::string { return Engine::i18n::fmt("警告：快照名称过长将被截断: {}", name); });
     }
-    uint8_t nameLen = static_cast<uint8_t>(snap.name.size());
+    auto nameLen = static_cast<uint8_t>(snap.name.size());
     file.write(reinterpret_cast<const char*>(&nameLen), 1);
     file.write(snap.name.data(), nameLen);
 
-    uint16_t descLen = static_cast<uint16_t>(snap.description.size());
+    auto descLen = static_cast<uint16_t>(snap.description.size());
     file.write(reinterpret_cast<const char*>(&descLen), 2);
     file.write(snap.description.data(), descLen);
 
     auto ts = std::chrono::duration_cast<std::chrono::milliseconds>(
-        snap.created_at.time_since_epoch())
+                  snap.created_at.time_since_epoch())
                   .count();
     file.write(reinterpret_cast<const char*>(&ts), 8);
 
-    uint32_t entryCount = static_cast<uint32_t>(snap.entries.size());
+    auto entryCount = static_cast<uint32_t>(snap.entries.size());
     file.write(reinterpret_cast<const char*>(&entryCount), 4);
 
     // Entries
@@ -324,14 +324,14 @@ auto DataManager::SaveSnapshot(const std::string& name, const std::string& path)
         if (key.size() > UINT8_MAX) {
             Log([&key]() -> std::string { return Engine::i18n::fmt("警告：条目名称过长将被截断: {}", key); });
         }
-        uint8_t keyLen = static_cast<uint8_t>(key.size());
+        auto keyLen = static_cast<uint8_t>(key.size());
         file.write(reinterpret_cast<const char*>(&keyLen), 1);
         file.write(key.data(), keyLen);
 
         uint32_t type = entry->Type.load();
         file.write(reinterpret_cast<const char*>(&type), 4);
 
-        entry->Read([&](const std::shared_ptr<uint8_t[]>& data) {
+        entry->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
             uint32_t dataSize = entry->Size.load();
             file.write(reinterpret_cast<const char*>(&dataSize), 4);
             file.write(reinterpret_cast<const char*>(data.get()), dataSize);

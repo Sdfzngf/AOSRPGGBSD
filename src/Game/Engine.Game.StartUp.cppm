@@ -25,7 +25,7 @@ export namespace Engine {
 Engine::Utils::Data::DataManager DM;
 Engine::Utils::Script::ScriptManager SM;
 
-void Engine::Game::StartUp()
+auto Engine::Game::StartUp() -> void
 {
     Log("void Engine::Game::StartUp()");
     std::string myth = Engine::Basics::Random::rand_str(256);
@@ -43,6 +43,5 @@ void Engine::Game::StartUp()
     SM.L.OpenLibs();
     SM.RunScript(DM.GetEntry(std::string("startup.lua")));
     DM.MountDB("./Game/startup.dat");
-
 }
 }

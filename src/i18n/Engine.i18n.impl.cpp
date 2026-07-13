@@ -5,8 +5,8 @@
  */
 module;
 
-#include <nlohmann/json.hpp>
 #include <mutex>
+#include <nlohmann/json.hpp>
 #include <shared_mutex>
 #include <string>
 #include <unordered_map>
@@ -21,7 +21,7 @@ namespace {
     std::string current_lang_;
 }
 
-void Init(const std::string& lang, const std::string& json_content)
+auto Init(const std::string& lang, const std::string& json_content) -> void
 {
     std::unique_lock lock(mu_);
     auto j = nlohmann::json::parse(json_content);
@@ -32,7 +32,7 @@ void Init(const std::string& lang, const std::string& json_content)
     current_lang_ = lang;
 }
 
-void SwitchLanguage(const std::string& lang, const std::string& json_content)
+auto SwitchLanguage(const std::string& lang, const std::string& json_content) -> void
 {
     std::unique_lock lock(mu_);
     auto j = nlohmann::json::parse(json_content);

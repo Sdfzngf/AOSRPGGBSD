@@ -10,7 +10,7 @@ module;
 export module Engine.Basics.Memory;
 
 export namespace Engine::Basics::Memory {
-void dump_hex(const uint8_t* buf, uint32_t size)
+auto dump_hex(const uint8_t* buf, uint32_t size) -> void
 {
     for (uint32_t i = 0; i < size; i += 16) {
         std::print("{:08X}: ", i);

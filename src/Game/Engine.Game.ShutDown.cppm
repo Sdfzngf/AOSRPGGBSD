@@ -12,7 +12,7 @@ import Engine.Utils.Logger;
 using Engine::Utils::Logger::Log;
 
 export namespace Engine {
-void Engine::Game::ShutDown()
+auto Engine::Game::ShutDown() -> void
 {
     Log("void Engine::Game::ShutDown()");
 }

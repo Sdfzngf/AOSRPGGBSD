@@ -43,7 +43,7 @@ struct DataEntry {
         Data = data;
     }
 
-    void SetData(const std::shared_ptr<uint8_t[]>& data, uint32_t size)
+    auto SetData(const std::shared_ptr<uint8_t[]>& data, uint32_t size) -> void
     {
         std::unique_lock lock(DataMutex);
         Size.store(size);
@@ -51,13 +51,13 @@ struct DataEntry {
     }
 
     // 设置名称
-    void SetName(const std::string& name)
+    auto SetName(const std::string& name) -> void
     {
         std::unique_lock lock(DataMutex);
         Name.store(std::make_shared<std::string>(name));
     }
     // 设置数据
-    void New(uint32_t size)
+    auto New(uint32_t size) -> void
     {
         std::unique_lock lock(DataMutex);
         Size = size;
@@ -97,7 +97,7 @@ struct DataEntry {
  * @brief 压力一个Entry?!!
  *
  */
-void _test_entry()
+auto _test_entry() -> void
 {
     ::Engine::Utils::Data::DataEntry ent;
     ent.Size = sizeof(::Engine::Utils::Data::DB_Header);

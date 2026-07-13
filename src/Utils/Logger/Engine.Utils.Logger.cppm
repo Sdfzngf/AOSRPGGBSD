@@ -17,37 +17,37 @@ export import Engine.Utils.Logger.LogLevel;
 using Engine::i18n::locale;
 // NOLINTBEGIN
 export namespace Engine::Utils::Logger {
-#define _log_pref()                                                                                                               \
-    if (loglevel < Engine::Utils::Logger::CurrentLogLevel.load(std::memory_order_relaxed) && loglevel != Engine::Utils::Logger::LogLevel::SUCCESS) {              \
-        return 1;                                                                                                                 \
-    }                                                                                                                             \
-    if ((loglevel != Engine::Utils::Logger::LogLevel::NOTIME) && (loglevel != Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL)) { \
-        printf("[%f]", Engine::Utils::Time::GetAppRunningTime());                                                                 \
-    }                                                                                                                             \
-    switch (loglevel) {                                                                                                           \
-    case Engine::Utils::Logger::LogLevel::DEBUG:                                                                                  \
-        printf("\033[1;37m[DEBUG]\033[0m: ");                                                                                     \
-        break;                                                                                                                    \
-    case Engine::Utils::Logger::LogLevel::INFO:                                                                                   \
-        printf("\033[1;36m[INFO]\033[0m: ");                                                                                      \
-        break;                                                                                                                    \
-    case Engine::Utils::Logger::LogLevel::WARN:                                                                                   \
-        printf("\033[1;33m[WARN]\033[0m: ");                                                                                      \
-        break;                                                                                                                    \
-    case Engine::Utils::Logger::LogLevel::ERROR:                                                                                  \
-        printf("\033[1;35m[ERROR]\033[0m: ");                                                                                     \
-        break;                                                                                                                    \
-    case Engine::Utils::Logger::LogLevel::CRITICAL:                                                                               \
-        printf("\033[1;31m[CRITICAL]\033[0m: ");                                                                                  \
-        break;                                                                                                                    \
-    case Engine::Utils::Logger::LogLevel::SUCCESS:                                                                                \
-        printf("\033[1;32m[SUCCESS]\033[0m: ");                                                                                   \
-        break;                                                                                                                    \
-    case Engine::Utils::Logger::LogLevel::WTF:                                                                                    \
-        printf("\033[1;2;4;7;5;32m[WTF]: ");                                                                                      \
-        break;                                                                                                                    \
-    default:                                                                                                                      \
-        break;                                                                                                                    \
+#define _log_pref()                                                                                                                                  \
+    if (loglevel < Engine::Utils::Logger::CurrentLogLevel.load(std::memory_order_relaxed) && loglevel != Engine::Utils::Logger::LogLevel::SUCCESS) { \
+        return 1;                                                                                                                                    \
+    }                                                                                                                                                \
+    if ((loglevel != Engine::Utils::Logger::LogLevel::NOTIME) && (loglevel != Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL)) {                    \
+        printf("[%f]", Engine::Utils::Time::GetAppRunningTime());                                                                                    \
+    }                                                                                                                                                \
+    switch (loglevel) {                                                                                                                              \
+    case Engine::Utils::Logger::LogLevel::DEBUG:                                                                                                     \
+        printf("\033[1;37m[DEBUG]\033[0m: ");                                                                                                        \
+        break;                                                                                                                                       \
+    case Engine::Utils::Logger::LogLevel::INFO:                                                                                                      \
+        printf("\033[1;36m[INFO]\033[0m: ");                                                                                                         \
+        break;                                                                                                                                       \
+    case Engine::Utils::Logger::LogLevel::WARN:                                                                                                      \
+        printf("\033[1;33m[WARN]\033[0m: ");                                                                                                         \
+        break;                                                                                                                                       \
+    case Engine::Utils::Logger::LogLevel::ERROR:                                                                                                     \
+        printf("\033[1;35m[ERROR]\033[0m: ");                                                                                                        \
+        break;                                                                                                                                       \
+    case Engine::Utils::Logger::LogLevel::CRITICAL:                                                                                                  \
+        printf("\033[1;31m[CRITICAL]\033[0m: ");                                                                                                     \
+        break;                                                                                                                                       \
+    case Engine::Utils::Logger::LogLevel::SUCCESS:                                                                                                   \
+        printf("\033[1;32m[SUCCESS]\033[0m: ");                                                                                                      \
+        break;                                                                                                                                       \
+    case Engine::Utils::Logger::LogLevel::WTF:                                                                                                       \
+        printf("\033[1;2;4;7;5;32m[WTF]: ");                                                                                                         \
+        break;                                                                                                                                       \
+    default:                                                                                                                                         \
+        break;                                                                                                                                       \
     }
 
 /**
@@ -58,7 +58,7 @@ export namespace Engine::Utils::Logger {
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-int Log(std::string content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n')
+auto Log(std::string content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
 {
     _log_pref();
     printf("%s\033[0m%c", content.c_str(), end);
@@ -73,7 +73,7 @@ int Log(std::string content, const Engine::Utils::Logger::LogLevel loglevel = En
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-int Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n')
+auto Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
 {
     _log_pref();
     printf("%s\033[0m%c", content, end);
@@ -88,7 +88,7 @@ int Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = En
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-int Log(std::string (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n')
+auto Log(std::string (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
 {
     _log_pref();
     printf("%s\033[0m%c", callcallback().c_str(), end);
@@ -103,7 +103,7 @@ int Log(std::string (*callcallback)(), const Engine::Utils::Logger::LogLevel log
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-int Log(const char* (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n')
+auto Log(const char* (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
 {
     _log_pref();
     printf("%s\033[0m%c", callcallback(), end);
@@ -119,7 +119,7 @@ int Log(const char* (*callcallback)(), const Engine::Utils::Logger::LogLevel log
  * @return int 看心情的返回值
  */
 template <typename T>
-int Log(T callcallback, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n')
+auto Log(T callcallback, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
 {
     _log_pref();
     std::string msg = callcallback();
@@ -127,9 +127,10 @@ int Log(T callcallback, const Engine::Utils::Logger::LogLevel loglevel = Engine:
     return 0;
 }
 
-int LogHex()
+auto LogHex() -> int
 {
     // 我待会再来写这个
+    // 没错
     return 0;
 }
 
@@ -138,7 +139,7 @@ int LogHex()
  *
  * @return int
  */
-int _loglevel_test_()
+auto _loglevel_test_() -> int
 {
     std::cout << Engine::Utils::Time::GetAppRunningTime() << "test\n";
     Log("Ciallo", Engine::Utils::Logger::LogLevel::WTF);
