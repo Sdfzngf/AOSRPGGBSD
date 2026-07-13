@@ -56,15 +56,15 @@ auto locale(const char* text) -> std::string;
  * @return 翻译并格式化后的字符串
  */
 template <typename... Args>
-auto fmt(const std::string& key, Args&&... args) -> std::string
+auto fmt(const std::string& key, const Args&... args) -> std::string
 {
-    return std::vformat(locale(key), std::make_format_args(std::forward<Args>(args)...));
+    return std::vformat(locale(key), std::make_format_args(args...));
 }
 
 template <typename... Args>
-auto fmt(const char* key, Args&&... args) -> std::string
+auto fmt(const char* key, const Args&... args) -> std::string
 {
-    return std::vformat(locale(key), std::make_format_args(std::forward<Args>(args)...));
+    return std::vformat(locale(key), std::make_format_args(args...));
 }
 
 } // namespace Engine::i18n

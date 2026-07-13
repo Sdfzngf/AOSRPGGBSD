@@ -41,7 +41,4 @@ auto main(int argc, char* argv[]) -> int
     g.StartUp();
     g.MainLoop();
     g.ShutDown();
-    lua_State* L = luaL_newstate();
-    luaL_dostring(L, "print(\"AOSRPGGBSD shutdown complete\")");
-    lua_close(L);
 }

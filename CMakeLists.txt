@@ -102,13 +102,13 @@ target_include_directories(lua PUBLIC ${lua_SOURCE_DIR})
 
 add_executable(AOSRPGGBSD
         src/main.cpp
-        src/i18n/Engine.i18n.impl.cpp
 )
 
 add_custom_target(PackRes
-        COMMAND "rm" -rf ./bin/Game
-        COMMAND "mkdir" ./bin/Game/
-        COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/startup.rres ../src/Resources/i18n.rres ./bin/Game/startup.dat 11451
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/Game ${CMAKE_BINARY_DIR}/bin/Lang
+        COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/startup.rres ./bin/Game/startup.dat 11451
+        COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/i18n/i18n.rres ./bin/Lang/Lang.dat Translate_ME!
+        COMMAND ${CMAKE_COMMAND} -DOUTPUT_FILE=${CMAKE_BINARY_DIR}/bin/Lang/config.txt -DCONTENT=zh-CN -P ${CMAKE_CURRENT_SOURCE_DIR}/write_file.cmake
         USES_TERMINAL
         VERBATIM
 )
@@ -136,6 +136,7 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Logger/Engine.Utils.Logger.cppm
 
                 FILES src/i18n/Engine.i18n.cppm
+                FILES src/i18n/Engine.i18n.functions.cppm
 
                 FILES src/Utils/Arguments/Engine.Utils.Arg.Actions.cppm
                 FILES src/Utils/Arguments/Engine.Utils.Arg.MArg.cppm

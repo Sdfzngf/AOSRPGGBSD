@@ -11,7 +11,7 @@ module;
 #include <string>
 #include <unordered_map>
 
-module Engine.i18n;
+module Engine.i18n:funtions;
 
 namespace Engine::i18n {
 

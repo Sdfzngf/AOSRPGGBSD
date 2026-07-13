@@ -8,6 +8,7 @@ module;
 #include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <functional>
@@ -17,6 +18,7 @@ module;
 #include <optional>
 #include <shared_mutex>
 #include <sys/stat.h>
+#include <system_error>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -37,6 +39,7 @@ import Engine.Basics.Memory;
 using Engine::i18n::locale;
 using Engine::Utils::Data::DB_Header;
 using Engine::Utils::Logger::Log;
+namespace fs = std::filesystem;
 
 export namespace Engine::Utils::Data {
 /**
@@ -411,10 +414,25 @@ public:
     {
         std::unique_lock<std::shared_mutex> lock(mtx);
         ccb(std::string(locale("尝试保存当前数据库")), 1);
+        fs::path filePath(path);
+        fs::path parentDir = filePath.parent_path();
+        if (!parentDir.empty()) {
+            std::error_code dirEc;
+            fs::create_directories(parentDir, dirEc);
+            if (dirEc) {
+                ccb(Engine::i18n::fmt("无法创建目录 \"{}\": {}", parentDir.string(), dirEc.message()), 1);
+                Log([&]() -> std::string {
+                    return Engine::i18n::fmt("无法创建目录 \"{}\": {}", parentDir.string(), dirEc.message());
+                });
+                return 3; // 新的错误码，表示目录创建失败
+            }
+        }
         std::fstream file(path, std::ios::binary | std::ios::out | std::ios::trunc);
         if (!file) {
             ccb(Engine::i18n::fmt("无法打开文件\"{}\"", path), 1);
-            Log([path]() -> std::string { return Engine::i18n::fmt("无法打开文件\"{}\"", path); });
+            int err = errno;
+            std::error_code ec(err, std::generic_category());
+            Log([path, ec]() -> std::string { return Engine::i18n::fmt("无法打开文件\"{}\":{}", path, ec.message()); });
             return 1;
         }
         DB_Header dbh;
