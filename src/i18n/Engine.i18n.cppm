@@ -47,7 +47,7 @@ auto locale(const std::string& text) -> std::string;
 auto locale(const char* text) -> std::string;
 
 /**
- * @brief 翻译 + 格式化（替代 Engine::i18n::fmt(...), args)）
+ * @brief 翻译 + 格式化
  *
  * 因为 std::format 要求格式字符串为编译时常量，runtime i18n 必须用 vformat。
  *
@@ -65,6 +65,27 @@ template <typename... Args>
 auto fmt(const char* key, const Args&... args) -> std::string
 {
     return std::vformat(locale(key), std::make_format_args(args...));
+}
+
+/**
+ * @brief 翻译
+ *
+ * 因为 std::format 要求格式字符串为编译时常量，runtime i18n 必须用 vformat。
+ *
+ * @param key 源语言字符串（翻译 key + format 模板）
+ * @param args 格式化参数
+ * @return 翻译并格式化后的字符串
+ */
+template <typename... Args>
+auto nfmt(const std::string& key, const Args&... args) -> std::string
+{
+    return std::vformat(key, std::make_format_args(args...));
+}
+
+template <typename... Args>
+auto nfmt(const char* key, const Args&... args) -> std::string
+{
+    return std::vformat(key, std::make_format_args(args...));
 }
 
 } // namespace Engine::i18n

@@ -23,9 +23,6 @@ using Engine::Utils::Logger::Log;
 
 export namespace Engine {
 
-Engine::Utils::Data::DataManager DM;
-Engine::Utils::Script::ScriptManager SM;
-
 auto Engine::Game::StartUp() -> void
 {
     Log("void Engine::Game::StartUp()");
@@ -54,5 +51,18 @@ auto Engine::Game::StartUp() -> void
     SM.L.OpenLibs();
     SM.RunScript(DM.GetEntry(std::string("startup.rres@startup.lua")));
     DM.MountDB("./Game/startup.dat");
+
+    if (GM.Init("SDL") != 0)
+        return;
+
+    wW = 640;
+    wH = 480;
+
+    if (GM.CreateWindow("Game", wW, wH) != 0)
+        return;
+
+    // GM.SetLogicalSize(wW, wH);
+
+    Running = true;
 }
 }
