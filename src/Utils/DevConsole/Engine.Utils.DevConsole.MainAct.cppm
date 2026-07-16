@@ -125,14 +125,14 @@ static auto parseCommandLine(const std::string& line) -> std::vector<std::string
  * - add <name> <data> [type]
  * - add <name> --file <path> [type]
  */
-void Add(const auto& args, replxx::Replxx& replxx)
+void Add(const auto& args, replxx::Replxx& replxx, std::string filename = "") // NOLINT
 {
     if (args.size() < 3) {
         replxx.print("%s\n", std::string(locale("用法: add <name> <data> [type] 或 add <name> --file <path> [type]")).c_str()); // NOLINT
         return;
     }
 
-    const std::string& name = args.at(1);
+    const std::string name = filename + args.at(1);
     uint32_t type = 1;
     std::shared_ptr<uint8_t[]> dataBuffer;
     uint32_t dataSize = 0;
@@ -413,6 +413,8 @@ public:
                 }
                 // 获取 .rres 文件所在目录，用于解析 --file 相对路径
                 const std::filesystem::path rresDir = std::filesystem::absolute(i).parent_path();
+                std::string filename = std::filesystem::path(i).filename();
+                filename += "@";
                 std::string line;
                 while (std::getline(file, line)) {
                     const char* cinput = line.c_str();
@@ -438,7 +440,7 @@ public:
 
                     const std::string& cmd = args.front();
                     if (cmd == "add") {
-                        Add(args, replxx);
+                        Add(args, replxx, filename);
                     }
                 }
                 file.close();

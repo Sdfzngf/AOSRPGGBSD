@@ -1,1 +1,1 @@
-add startup.rres@startup.lua --file "startup.lua" Script
+add startup.lua --file "startup.lua" Script
