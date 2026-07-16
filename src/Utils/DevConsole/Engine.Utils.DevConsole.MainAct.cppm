@@ -441,6 +441,9 @@ public:
                     const std::string& cmd = args.front();
                     if (cmd == "add") {
                         Add(args, replxx, filename);
+                    } else if (cmd == "dbname") {
+                        if (args.size() >= 2)
+                            filename = args.at(1) + "@";
                     }
                 }
                 file.close();

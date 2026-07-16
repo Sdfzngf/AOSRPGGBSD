@@ -38,7 +38,7 @@ auto Engine::Game::StartUp() -> void
     }
     file.close();
 
-    lang = std::string("i18n.rres@") + lang;
+    lang = std::string("__EG_i18n__@") + lang;
 
     auto i18nEntry = DM.GetEntry(lang);
     if (i18nEntry) {
@@ -49,7 +49,7 @@ auto Engine::Game::StartUp() -> void
     }
 
     SM.L.OpenLibs();
-    SM.RunScript(DM.GetEntry(std::string("startup.rres@startup.lua")));
+    SM.RunScript(DM.GetEntry(std::string("__Engine_StartUp__@startup.lua")));
     DM.MountDB("./Game/startup.dat");
 
     if (GM.Init("SDL") != 0)
