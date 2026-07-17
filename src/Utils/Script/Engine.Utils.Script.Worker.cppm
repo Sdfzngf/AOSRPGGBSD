@@ -7,10 +7,12 @@
 module;
 
 #include <atomic>
+#include <condition_variable>
 #include <cstdint>
 #include <cstring>
 #include <functional>
 #include <memory>
+#include <mutex>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
 #include <string>
@@ -22,7 +24,9 @@ import Engine.Utils.Script.Lua;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Logger;
+import Engine.GUI.GUIManager;
 
+using namespace ::Engine::GUI;
 using json = nlohmann::json;
 
 export namespace Engine::Utils::Script {
@@ -34,14 +38,21 @@ public:
 
     Worker(std::string name,
            std::shared_ptr<::Engine::Utils::Data::DataManager> dm,
+           std::shared_ptr<::Engine::GUI::GUIManager> gm,
            const std::string& entry_key,
            SpawnCallback spawn_cb)
         : name_(std::move(name))
         , dm_(std::move(dm))
+        , gm_(std::move(gm))
         , spawn_callback_(std::move(spawn_cb))
     {
         running_.store(true);
         thread_ = std::thread(&Worker::ThreadFunc, this, entry_key);
+
+        // 等待 Worker 初始化完毕（进入帧循环或退出）
+        while (!init_done_.load()) {
+            std::this_thread::yield();
+        }
     }
 
     ~Worker()
@@ -66,6 +77,32 @@ public:
 
     [[nodiscard]] auto IsRunning() const -> bool { return running_.load(); }
     [[nodiscard]] auto GetName() const -> const std::string& { return name_; }
+    [[nodiscard]] auto IsFrameMode() const -> bool { return frame_mode_.load(); }
+
+    /// 主线程每帧调用，唤醒帧模式 Worker 并等待其完成渲染
+    auto TickFrame(double dt) -> void
+    {
+        if (!frame_mode_.load()) return;
+        {
+            std::lock_guard lock(frame_mtx_);
+            frame_dt_ = dt;
+            frame_ready_ = true;
+        }
+        frame_cv_.notify_one();
+
+        // 等待 Worker 完成帧渲染（阻塞主线程，确保命令已推入队列）
+        std::unique_lock lock(frame_done_mtx_);
+        frame_done_cv_.wait(lock, [this] { return !frame_busy_.load(); });
+    }
+
+    /// 通知帧模式 Worker 退出（Shutdown 时调用）
+    auto SignalExit() -> void
+    {
+        should_exit_.store(true);
+        if (frame_mode_.load()) {
+            frame_cv_.notify_one();
+        }
+    }
 
     /// 将 nlohmann::json 转为 sol Lua 值（供 ScriptManager 复用）
     static auto JsonToSol_LuaState(const json& j, LuaState& lua) -> sol::object
@@ -138,6 +175,21 @@ public:
     }
 
 private:
+    /// Lua 可调用的 sleep_frame C 函数
+    static auto SleepFrameCFunc(lua_State* L) -> int
+    {
+        // upvalue 1 是 Worker*（lightuserdata）
+        auto* self = static_cast<Worker*>(lua_touserdata(L, lua_upvalueindex(1)));
+        if (self->should_exit_.load()) {
+            lua_pushnumber(L, 0.0);
+            return 1;
+        }
+        self->frame_mode_.store(true);
+
+        // yield: 主线程 resume 时会传入 dt
+        return lua_yield(L, 0);
+    }
+
     void ThreadFunc(const std::string& entry_key)
     {
         try {
@@ -151,13 +203,59 @@ private:
                     std::string("[Worker ") + name_ + "]: entry not found: " + entry_key,
                     Engine::Utils::Logger::LogLevel::ERROR);
                 running_.store(false);
+                init_done_.store(true);
                 return;
             }
 
+            // 加载脚本并创建协程
             uint32_t sz = entry->GetSize();
-            entry->Read([&lua, sz](const std::shared_ptr<uint8_t[]>& data) -> void {
-                lua.DoBuffer(reinterpret_cast<const char*>(data.get()), sz);
+            sol::state_view sv = lua.get_state();
+            sol::load_result load;
+            entry->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
+                load = sv.load_buffer(reinterpret_cast<const char*>(data.get()), sz, "script");
+                if (!load.valid()) {
+                    sol::error err = load;
+                    throw err;
+                }
             });
+
+            // 用协程执行脚本（自动检测帧模式）
+            sol::coroutine cr(load);
+            auto r1 = cr();
+            if (r1.valid() && r1.status() == sol::call_status::ok) {
+                // 普通 Worker：脚本执行完没 yield，直接退出
+                running_.store(false);
+                init_done_.store(true);
+                return;
+            }
+
+            // 脚本 yield 了 → 帧模式
+            frame_mode_.store(true);
+            init_done_.store(true);
+
+            while (running_.load() && !should_exit_.load()) {
+                // 等待主线程唤醒
+                {
+                    std::unique_lock lock(frame_mtx_);
+                    frame_cv_.wait(lock, [this] { return frame_ready_ || should_exit_.load(); });
+                    if (should_exit_.load())
+                        break;
+                    frame_ready_ = false;
+                }
+
+                // 标记忙碌，resume 协程执行帧逻辑
+                frame_busy_.store(true);
+
+                auto r2 = cr(frame_dt_);
+
+                // 帧逻辑完成（Lua 已 yield，命令已推入队列）
+                frame_busy_.store(false);
+                frame_done_cv_.notify_one();
+
+                if (!r2.valid() || r2.status() == sol::call_status::ok) {
+                    break; // 脚本正常结束
+                }
+            }
         } catch (const std::exception& e) {
             Engine::Utils::Logger::Log(
                 std::string("[Worker ") + name_ + "]: exception: " + e.what(),
@@ -168,6 +266,7 @@ private:
                 Engine::Utils::Logger::LogLevel::ERROR);
         }
         running_.store(false);
+        init_done_.store(true);
     }
 
     void SetupLuaAPI(LuaState& lua)
@@ -268,6 +367,63 @@ private:
             return dm_->GetList();
         });
 
+        // ── gui 表（Worker 线程安全，推入命令队列） ──
+        auto gui_table = state.create_table();
+
+        gui_table.set_function("set_background",
+                               [this](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                                   if (!gm_)
+                                       return;
+                                   CmdSetBackground cmd { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) };
+                                   gm_->PushCommand(cmd);
+                               });
+
+        gui_table.set_function("rect",
+                               [this](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                                   if (!gm_)
+                                       return;
+                                   CmdRect cmd { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) };
+                                   gm_->PushCommand(cmd);
+                               });
+
+        gui_table.set_function("text",
+                               [this](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) {
+                                   if (!gm_)
+                                       return;
+                                   CmdText cmd { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) };
+                                   gm_->PushCommand(cmd);
+                               });
+
+        gui_table.set_function("set_title",
+                               [this](const std::string& title, sol::optional<int> z_order) {
+                                   if (!gm_)
+                                       return;
+                                   CmdSetTitle cmd { .title = title, .z_order = z_order.value_or(0) };
+                                   gm_->PushCommand(cmd);
+                               });
+
+        gui_table.set_function("set_logical_size",
+                               [this](int w, int h, sol::optional<int> z_order) {
+                                   if (!gm_)
+                                       return;
+                                   CmdSetLogicalSize cmd { .w = w, .h = h, .z_order = z_order.value_or(0) };
+                                   gm_->PushCommand(cmd);
+                               });
+
+        gui_table.set_function("clear_queue", [this]() {
+            if (!gm_)
+                return;
+            gm_->ClearQueue();
+        });
+
+        state["gui"] = gui_table;
+
+        // ── sleep_frame() 全局函数（帧协程支持）──
+        lua_State* L = state.lua_state();
+        lua_pushlightuserdata(L, this);
+        lua_pushcclosure(L, SleepFrameCFunc, 1);
+        lua_setglobal(L, "sleep_frame");
+
         state["dm"] = dm_table;
     }
 
@@ -308,9 +464,19 @@ private:
 
     std::string name_;
     std::shared_ptr<::Engine::Utils::Data::DataManager> dm_;
+    std::shared_ptr<::Engine::GUI::GUIManager> gm_;
     SpawnCallback spawn_callback_;
     std::atomic<bool> running_ { false };
     std::atomic<bool> should_exit_ { false };
+    std::atomic<bool> init_done_ { false };
+    std::atomic<bool> frame_mode_ { false };
+    std::mutex frame_mtx_;
+    std::condition_variable frame_cv_;
+    double frame_dt_ { 0.0 };
+    bool frame_ready_ { false };
+    std::atomic<bool> frame_busy_ { false };
+    std::mutex frame_done_mtx_;
+    std::condition_variable frame_done_cv_;
     std::thread thread_;
 };
 

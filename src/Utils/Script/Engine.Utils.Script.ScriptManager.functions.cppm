@@ -18,6 +18,9 @@ import Engine.Utils.Script.Worker;
 import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Logger;
+import Engine.GUI.GUIManager;
+
+using namespace ::Engine::GUI;
 
 export namespace Engine::Utils::Script {
 
@@ -83,6 +86,65 @@ auto ScriptManager::SetupMainDMAPI() -> void
     });
 
     state["dm"] = dm_table;
+}
+
+auto ScriptManager::SetupGUILuaAPI() -> void
+{
+    auto& state = L.get_state();
+    auto gui_table = state.create_table();
+
+    gui_table.set_function("set_background",
+                           [this](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                               if (!SGM)
+                                   return;
+                               CmdSetBackground cmd { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) };
+                               SGM->PushCommand(cmd);
+                           });
+    gui_table.set_function("rect",
+                           [this](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                               if (!SGM)
+                                   return;
+                               CmdRect cmd { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) };
+                               SGM->PushCommand(cmd);
+                           });
+
+    gui_table.set_function("text",
+                           [this](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) {
+                               if (!SGM)
+                                   return;
+                               CmdText cmd { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) };
+                               SGM->PushCommand(cmd);
+                           });
+
+    gui_table.set_function("set_title",
+                           [this](const std::string& title, sol::optional<int> z_order) {
+                               if (!SGM)
+                                   return;
+                               CmdSetTitle cmd { .title = title, .z_order = z_order.value_or(0) };
+                               SGM->PushCommand(cmd);
+                           });
+
+    gui_table.set_function("set_logical_size",
+                           [this](int w, int h, sol::optional<int> z_order) {
+                               if (!SGM)
+                                   return;
+                               CmdSetLogicalSize cmd { .w = w, .h = h, .z_order = z_order.value_or(0) };
+                               SGM->PushCommand(cmd);
+                           });
+    gui_table.set_function("disable_logical_size", [this]() {
+        if (!SGM)
+            return;
+        CmdDisableLogicalSize cmd { };
+        SGM->PushCommand(cmd);
+    });
+
+    gui_table.set_function("clear_queue", [this]() {
+        if (!SGM)
+            return;
+        SGM->ClearQueue();
+    });
+
+    state["gui"] = gui_table;
 }
 
 }; // namespace Engine::Utils::Script

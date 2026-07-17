@@ -119,6 +119,7 @@ add_custom_target(PackRes
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/startup.rres ./bin/Game/startup.dat 11451
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/i18n/i18n.rres ./bin/Lang/Lang.dat Translate_ME!
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/test/workertest.rres ./bin/Test/worker.dat LLLL
+        COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/Background/background.rres ./bin/Game/background.dat Boki
         COMMAND ${CMAKE_COMMAND} -DOUTPUT_FILE=${CMAKE_BINARY_DIR}/bin/Lang/config.txt -DCONTENT=zh-CN -P ${CMAKE_CURRENT_SOURCE_DIR}/write_file.cmake
         USES_TERMINAL
         VERBATIM
@@ -253,10 +254,11 @@ target_sources(test_worker
                 FILES src/Utils/Script/Engine.Utils.Script.Worker.cppm
                 FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.functions.cppm
                 FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.cppm
+                FILES src/GUI/Engine.GUI.GUIManager.cppm
 )
 
 target_compile_features(test_worker PRIVATE cxx_std_26)
-target_link_libraries(test_worker PRIVATE lua sol2 nlohmann_json::nlohmann_json)
+target_link_libraries(test_worker PRIVATE lua sol2 nlohmann_json::nlohmann_json SDL3::SDL3-static)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -24,12 +24,17 @@ auto Engine::Game::MainLoop() -> void
     char xr = 1, yr = 1;
     while (Running) {
         prevTime = Engine::Utils::Time::GetAppRunningTime();
+
         GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}", wW.load(), wH.load(), static_cast<int>(FPS)));
 
-        GM.load().get()->SetBackground(100, 100, 100, 255);
-        GM.load().get()->Rect(0, 0, wW, wH, 255, 0, 0, 0);
-        GM.load().get()->Rect(x, y, 92, 28, 0, 0, 0, 0);
-        GM.load().get()->BasicText("DVD", x / 4, y / 4, 255, 255, 255, 255, 4);
+        // C++ 渲染命令推入队列（和 Lua 命令统一由 FlushCommands 排序执行）
+        GM.load().get()->SetBackgroundM(100, 100, 100, 255, 0);
+        GM.load().get()->RectM(0, 0, wW, wH, 255, 0, 0, 0, 1);
+        GM.load().get()->RectM(x, y, 92, 28, 0, 0, 0, 0, 5);
+        GM.load().get()->TextM("DVD", x, y, 255, 255, 255, 255, 4, 5);
+
+        GM.load().get()->FlushCommands();
+        SM.load().get()->TickFrameWorkers(deltaTime);
 
         if (x < 0) {
             x = 0;
@@ -50,7 +55,7 @@ auto Engine::Game::MainLoop() -> void
         x += deltaTime * xr * 100;
         y += deltaTime * yr * 100;
 
-        GM.load().get()->Update(Running, wW, wH);
+        GM.load().get()->Update(Running);
         deltaTime = Engine::Utils::Time::GetAppRunningTime() - prevTime;
         FPS = 1 / deltaTime;
     }

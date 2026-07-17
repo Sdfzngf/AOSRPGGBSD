@@ -100,9 +100,8 @@ static void test_basic_worker()
     // 创建 Worker
     bool ok = sm.CreateWorker("basic_worker", "test_script");
     CHECK(ok);
-    CHECK(sm.IsWorkerRunning("basic_worker"));
 
-    // 等待 Worker 完成
+    // 等待 Worker 完成（小脚本可能瞬间执行完，先 join 再检查）
     sm.JoinWorker("basic_worker");
     CHECK(!sm.IsWorkerRunning("basic_worker"));
 

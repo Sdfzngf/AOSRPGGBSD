@@ -31,6 +31,7 @@ auto Engine::Game::StartUp() -> void
     SM.store(std::make_shared<Engine::Utils::Script::ScriptManager>());
     SM.load().get()->BindDataManager(DM);
     GM.store(std::make_shared<Engine::GUI::GUIManager>());
+    SM.load().get()->BindGUIManager(GM);
 
     std::string myth = Engine::Basics::Random::rand_str(256);
     DM.load().get()->CreateSnapshotAll(myth);
@@ -56,6 +57,7 @@ auto Engine::Game::StartUp() -> void
 
     SM.load().get()->OpenLibs();
     SM.load().get()->SetupMainDMAPI();
+    SM.load().get()->SetupGUILuaAPI();
     SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     DM.load().get()->MountDB("./Test/worker.dat");
@@ -67,9 +69,16 @@ auto Engine::Game::StartUp() -> void
     wW = 640;
     wH = 480;
 
-    if (GM.load().get()->CreateWindow("Game", wW, wH) != 0)
+    GM.load().get()->BindWH(&wW, &wH);
+
+    if (GM.load().get()->CreateWindow("Game") != 0)
         return;
 
+    GM.load().get()->SetLogicalSizeM(1280, 720);
+
     Running = true;
+
+    DM.load().get()->MountDB("./Game/background.dat");
+    SM.load().get()->CreateWorker("background_renderer", "__Engine_Background__@renderer.lua");
 }
 }

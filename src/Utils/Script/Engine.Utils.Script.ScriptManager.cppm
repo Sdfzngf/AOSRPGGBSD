@@ -43,6 +43,15 @@ public:
         SDM = dm;
     }
 
+    auto BindGUIManager(std::shared_ptr<::Engine::GUI::GUIManager>& gm) -> void
+    {
+        SGM = gm;
+    }
+    auto BindGUIManager(const std::atomic<std::shared_ptr<::Engine::GUI::GUIManager>>& gm) -> void
+    {
+        SGM = gm;
+    }
+
     constexpr auto RunScript(const std::shared_ptr<::Engine::Utils::Data::DataEntry>& DE) -> void
     {
         if (!DE) {
@@ -72,6 +81,9 @@ public:
     /// 主线程 Lua 环境注入 dm API（实现见 functions 分区）
     auto SetupMainDMAPI() -> void;
 
+    /// 主线程 Lua 环境注入 gui API（实现见 functions 分区）
+    auto SetupGUILuaAPI() -> void;
+
     /// 主线程 fire-and-forget 创建 Worker，返回是否成功
     auto CreateWorker(const std::string& name, const std::string& entry_key) -> bool
     {
@@ -93,6 +105,7 @@ public:
             auto w = std::make_shared<Worker>(
                 name,
                 SDM,
+                SGM,
                 entry_key,
                 [this](const std::string& child_name, const std::string& child_entry_key) -> std::shared_ptr<Worker> {
                     // Worker 内 spawn 的回调
@@ -104,6 +117,7 @@ public:
                         auto child = std::make_shared<Worker>(
                             child_name,
                             SDM,
+                            SGM,
                             child_entry_key,
                             [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
                                 return WorkerSpawn(gname, gkey);
@@ -152,6 +166,17 @@ public:
         }
     }
 
+    /// 每帧唤醒所有帧模式 Worker
+    auto TickFrameWorkers(double dt) -> void
+    {
+        std::lock_guard lock(workers_mtx);
+        for (auto& [name, w] : Workers) {
+            if (w->IsFrameMode()) {
+                w->TickFrame(dt);
+            }
+        }
+    }
+
     /// 关闭所有 Worker（优雅退出 + 超时强制）
     auto ShutdownWorkers() -> void
     {
@@ -163,8 +188,11 @@ public:
             }
         }
 
-        // 不需要显式发 should_exit——Worker 析构函数已经设了
-        // 但这里我们需要 Join 存活 Worker 而非析构
+        // 先通知所有 Worker 退出（唤醒帧模式 Worker）
+        for (auto& w : workers_copy) {
+            if (w) w->SignalExit();
+        }
+
         // 给 Worker 3 秒优雅退出
         for (auto& w : workers_copy) {
             if (w && w->IsRunning()) {
@@ -201,6 +229,7 @@ private:
             auto child = std::make_shared<Worker>(
                 name,
                 SDM,
+                SGM,
                 entry_key,
                 [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
                     return WorkerSpawn(gname, gkey);
