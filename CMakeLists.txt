@@ -168,6 +168,8 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Data/Engine.Utils.Data.DataManager.cppm
 
                 FILES src/Utils/Script/Engine.Utils.Script.Lua.cppm
+                FILES src/Utils/Script/Engine.Utils.Script.Worker.cppm
+                FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.functions.cppm
                 FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.cppm
 
                 FILES src/Basics/Engine.Basics.Game.cppm
@@ -224,6 +226,37 @@ target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static replxx lua sol2 nlohm
 #[[
 target_compile_features(test_snapshot PRIVATE cxx_std_26)
 target_link_libraries(test_snapshot PRIVATE SDL3::SDL3-static replxx lua)]]
+
+# ── Worker 功能测试 ──
+add_executable(test_worker
+        src/test_worker.cpp
+)
+
+target_sources(test_worker
+        PRIVATE
+                FILE_SET CXX_MODULES
+                FILES src/Basics/Engine.Basics.Memory.cppm
+                FILES src/Basics/Engine.Basics.Memory.MemoryStream.cppm
+                FILES src/Basics/Engine.Basics.TextUtils.cppm
+                FILES src/Basics/Engine.Basics.TextUtils.functions.cppm
+                FILES src/Utils/Engine.Utils.Time.cppm
+                FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
+                FILES src/Utils/Logger/Engine.Utils.Logger.cppm
+                FILES src/i18n/Engine.i18n.cppm
+                FILES src/i18n/Engine.i18n.functions.cppm
+                FILES src/Utils/Data/Engine.Utils.Data.DB.cppm
+                FILES src/Utils/Data/Engine.Utils.Data.DataEntry.EntryType.cppm
+                FILES src/Utils/Data/Engine.Utils.Data.DataEntry.cppm
+                FILES src/Utils/Data/Engine.Utils.Data.DataManager.functions.cppm
+                FILES src/Utils/Data/Engine.Utils.Data.DataManager.cppm
+                FILES src/Utils/Script/Engine.Utils.Script.Lua.cppm
+                FILES src/Utils/Script/Engine.Utils.Script.Worker.cppm
+                FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.functions.cppm
+                FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.cppm
+)
+
+target_compile_features(test_worker PRIVATE cxx_std_26)
+target_link_libraries(test_worker PRIVATE lua sol2 nlohmann_json::nlohmann_json)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

@@ -55,6 +55,7 @@ auto Engine::Game::StartUp() -> void
     }
 
     SM.load().get()->OpenLibs();
+    SM.load().get()->SetupMainDMAPI();
     SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     DM.load().get()->MountDB("./Test/worker.dat");
@@ -68,8 +69,6 @@ auto Engine::Game::StartUp() -> void
 
     if (GM.load().get()->CreateWindow("Game", wW, wH) != 0)
         return;
-
-    // GM.SetLogicalSize(wW, wH);
 
     Running = true;
 }

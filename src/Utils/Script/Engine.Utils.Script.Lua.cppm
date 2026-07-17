@@ -17,8 +17,6 @@ export module Engine.Utils.Script.Lua;
 
 import Engine.Utils.Logger;
 
-inline thread_local bool has_state = false;
-
 namespace {
 auto lua_print(sol::variadic_args va, sol::this_state ts) -> void
 {
@@ -40,15 +38,8 @@ public:
     LuaState()
         : state_()
     {
-        if (has_state)
-            throw std::runtime_error("multiple LuaState");
-        else
-            has_state = true;
     }
-    ~LuaState()
-    {
-        has_state = false;
-    }
+    ~LuaState() = default;
     LuaState(const LuaState&) = delete;
     auto operator=(const LuaState&) -> LuaState& = delete;
     LuaState(LuaState&&) = delete;
@@ -78,7 +69,6 @@ public:
     void DoBuffer(const char* data, size_t size)
     {
         try {
-            // 使用 load_buffer + safe_call 分步执行，和原有逻辑一致
             sol::load_result load = state_.load_buffer(data, size, "script");
             if (!load.valid()) {
                 sol::error err = load;

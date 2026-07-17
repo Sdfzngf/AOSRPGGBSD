@@ -15,5 +15,7 @@ export namespace Engine {
 auto Engine::Game::ShutDown() -> void
 {
     Log("void Engine::Game::ShutDown()");
+    // 优雅关闭所有 Worker
+    SM.load().get()->ShutdownWorkers();
 }
 }

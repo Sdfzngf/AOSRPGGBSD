@@ -6,22 +6,29 @@ module;
 
 #include <cstdint>
 #include <memory>
+#include <mutex>
+#include <string>
+#include <thread>
 #include <unordered_map>
+#include <vector>
 
 export module Engine.Utils.Script.ScriptManager;
 
 export import Engine.Utils.Script.Lua;
-
+import Engine.Utils.Script.Worker;
 import Engine.Utils.Data.DB;
 import Engine.Utils.Data.DataEntry.EntryType;
 import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Data.DataManager;
+import Engine.Utils.Logger;
 
 export namespace Engine::Utils::Script {
+
 class ScriptManager {
 private:
-    LuaState L; // わたしがLです
-    std::unordered_map<std::string, LuaState> Workers;
+    LuaState L; // 主线程 LuaState
+    std::unordered_map<std::string, std::shared_ptr<Worker>> Workers;
+    mutable std::mutex workers_mtx;
     std::shared_ptr<::Engine::Utils::Data::DataManager> SDM;
 
 public:
@@ -33,6 +40,7 @@ public:
     {
         SDM = dm;
     }
+
     constexpr auto RunScript(const std::shared_ptr<::Engine::Utils::Data::DataEntry>& DE) -> void
     {
         if (!DE) {
@@ -45,6 +53,7 @@ public:
             });
         }
     }
+
     constexpr auto RunScript(const std::string& et) -> void
     {
         if (!SDM) {
@@ -52,9 +61,154 @@ public:
         }
         RunScript(SDM.get()->GetEntry(et));
     }
+
     auto OpenLibs() -> void
     {
         L.OpenLibs();
     }
+
+    /// 主线程 Lua 环境注入 dm API（实现见 functions 分区）
+    auto SetupMainDMAPI() -> void;
+
+    /// 主线程 fire-and-forget 创建 Worker，返回是否成功
+    auto CreateWorker(const std::string& name, const std::string& entry_key) -> bool
+    {
+        if (!SDM) {
+            ::Engine::Utils::Logger::Log("[ScriptManager] CreateWorker: DataManager not bound",
+                                       ::Engine::Utils::Logger::LogLevel::ERROR);
+            return false;
+        }
+
+        std::lock_guard lock(workers_mtx);
+        if (Workers.contains(name)) {
+            ::Engine::Utils::Logger::Log(
+                std::string("[ScriptManager] CreateWorker: worker already exists: ") + name,
+                ::Engine::Utils::Logger::LogLevel::ERROR);
+            return false;
+        }
+
+        try {
+            auto w = std::make_shared<Worker>(
+                name,
+                SDM,
+                entry_key,
+                [this](const std::string& child_name, const std::string& child_entry_key) -> std::shared_ptr<Worker> {
+                    // Worker 内 spawn 的回调
+                    std::lock_guard lock2(workers_mtx);
+                    if (Workers.contains(child_name)) {
+                        return nullptr;
+                    }
+                    try {
+                        auto child = std::make_shared<Worker>(
+                            child_name,
+                            SDM,
+                            child_entry_key,
+                            [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
+                                return WorkerSpawn(gname, gkey);
+                            });
+                        Workers[child_name] = child;
+                        return child;
+                    } catch (...) {
+                        return nullptr;
+                    }
+                });
+            Workers[name] = w;
+            return true;
+        } catch (const std::exception& e) {
+            ::Engine::Utils::Logger::Log(
+                std::string("[ScriptManager] CreateWorker failed: ") + e.what(),
+                ::Engine::Utils::Logger::LogLevel::ERROR);
+            return false;
+        }
+    }
+
+    /// 查询 Worker 是否运行中
+    auto IsWorkerRunning(const std::string& name) -> bool
+    {
+        std::lock_guard lock(workers_mtx);
+        auto it = Workers.find(name);
+        if (it == Workers.end()) {
+            return false;
+        }
+        return it->second->IsRunning();
+    }
+
+    /// 等待 Worker 完成
+    auto JoinWorker(const std::string& name) -> void
+    {
+        std::shared_ptr<Worker> w;
+        {
+            std::lock_guard lock(workers_mtx);
+            auto it = Workers.find(name);
+            if (it == Workers.end()) {
+                return;
+            }
+            w = it->second;
+        }
+        if (w) {
+            w->Join();
+        }
+    }
+
+    /// 关闭所有 Worker（优雅退出 + 超时强制）
+    auto ShutdownWorkers() -> void
+    {
+        std::vector<std::shared_ptr<Worker>> workers_copy;
+        {
+            std::lock_guard lock(workers_mtx);
+            for (auto& [name, w] : Workers) {
+                workers_copy.push_back(w);
+            }
+        }
+
+        // 不需要显式发 should_exit——Worker 析构函数已经设了
+        // 但这里我们需要 Join 存活 Worker 而非析构
+        // 给 Worker 3 秒优雅退出
+        for (auto& w : workers_copy) {
+            if (w && w->IsRunning()) {
+                // Wait up to 3s
+                auto start = std::chrono::steady_clock::now();
+                while (w->IsRunning()) {
+                    auto elapsed = std::chrono::steady_clock::now() - start;
+                    if (elapsed > std::chrono::seconds(3)) {
+                        ::Engine::Utils::Logger::Log(
+                            std::string("[ScriptManager] Worker timeout, detaching: ") + w->GetName(),
+                            ::Engine::Utils::Logger::LogLevel::WARN);
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                }
+                // 超时后或正常结束后不再 join——Worker 析构会 detach
+            }
+        }
+
+        {
+            std::lock_guard lock(workers_mtx);
+            Workers.clear();
+        }
+    }
+
+private:
+    /// Worker 内 spawn 的回调实现
+    auto WorkerSpawn(const std::string& name, const std::string& entry_key) -> std::shared_ptr<Worker>
+    {
+        if (Workers.contains(name)) {
+            return nullptr;
+        }
+        try {
+            auto child = std::make_shared<Worker>(
+                name,
+                SDM,
+                entry_key,
+                [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
+                    return WorkerSpawn(gname, gkey);
+                });
+            Workers[name] = child;
+            return child;
+        } catch (...) {
+            return nullptr;
+        }
+    }
 };
+
 }; // namespace Engine::Utils::Script

@@ -60,7 +60,7 @@ struct DataEntry {
     auto New(uint32_t size) -> void
     {
         std::unique_lock lock(DataMutex);
-        Size = size;
+        Size.store(size);
         Data.store(std::make_shared<uint8_t[]>(size));
     }
     // 只读访问回调（共享锁）
@@ -87,8 +87,10 @@ struct DataEntry {
         return std::forward<F>(func)(dataPtr);
     }
 
+    // 线程安全的获取大小（共享锁保护）
     auto GetSize() const -> uint32_t
     {
+        std::shared_lock lock(DataMutex);
         return Size.load();
     }
 };
