@@ -5,6 +5,7 @@
 module;
 
 #include <atomic>
+#include <memory>
 
 export module Engine.Game;
 
@@ -15,9 +16,9 @@ import Engine.GUI.GUIManager;
 export namespace Engine {
 class Game {
 private:
-    Engine::Utils::Data::DataManager DM;
-    Engine::Utils::Script::ScriptManager SM;
-    Engine::GUI::GUIManager GM;
+    std::atomic<std::shared_ptr<Engine::Utils::Data::DataManager>> DM;
+    std::atomic<std::shared_ptr<Engine::Utils::Script::ScriptManager>> SM;
+    std::atomic<std::shared_ptr<Engine::GUI::GUIManager>> GM;
     std::atomic<bool> Running = false;
     std::atomic<int> wH, wW;
 

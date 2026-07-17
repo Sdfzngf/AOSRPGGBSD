@@ -39,6 +39,7 @@ public:
     {
         Log("GUIManager::Init()");
         if (guilib == "SDL") {
+            SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
             if (!SDL_Init(SDL_INIT_VIDEO)) {
                 Log([&guilib]() -> std::string { return Engine::i18n::fmt("无法初始化{}: {}", guilib, SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
                 return 1;

@@ -8,6 +8,8 @@ module;
 #include <cassert>
 #include <lua.hpp>
 #include <memory>
+#include <sol/sol.hpp>
+#include <sol/state.hpp>
 #include <string>
 #include <type_traits>
 
@@ -15,84 +17,84 @@ export module Engine.Utils.Script.Lua;
 
 import Engine.Utils.Logger;
 
-// ── Lua print → Logger 桥接 ──
-// extern "C" 放在 export module 之后（模块 purview），可直接调用 Logger
-extern "C" {
-static auto _lua_log_print(lua_State* L) -> int
+inline thread_local bool has_state = false;
+
+namespace {
+auto lua_print(sol::variadic_args va, sol::this_state ts) -> void
 {
-    int n = lua_gettop(L);
-    lua_getglobal(L, "tostring");
     std::string result;
-    for (int i = 1; i <= n; i++) {
-        lua_pushvalue(L, -1); // tostring
-        lua_pushvalue(L, i);
-        lua_call(L, 1, 1);
-        const char* s = lua_tostring(L, -1);
-        if (s == nullptr)
-            return luaL_error(L, "'tostring' must return a string to 'print'"); // NOLINT
-        if (i > 1)
+    for (auto v : va) {
+        if (!result.empty())
             result += '\t';
-        result += s;
-        lua_pop(L, 1);
+        result += v.as<std::string>();
     }
-    Engine::Utils::Logger::Log(std::string("[Lua Script]: ") + result, Engine::Utils::Logger::LogLevel::INFO);
-    return 0;
+    Engine::Utils::Logger::Log("[Lua Script]: " + result,
+                               Engine::Utils::Logger::LogLevel::INFO);
 }
 }
 
 export namespace Engine::Utils::Script {
 class LuaState {
 public:
-    std::atomic<std::shared_ptr<lua_State>> L;
-
+    sol::state state_;
     LuaState()
-        : L(std::shared_ptr<lua_State>(luaL_newstate(), [](lua_State* l) -> void { lua_close(l); }))
+        : state_()
     {
+        if (has_state)
+            throw std::runtime_error("multiple LuaState");
+        else
+            has_state = true;
     }
+    ~LuaState()
+    {
+        has_state = false;
+    }
+    LuaState(const LuaState&) = delete;
+    auto operator=(const LuaState&) -> LuaState& = delete;
+    LuaState(LuaState&&) = delete;
+    auto operator=(LuaState&&) -> LuaState& = delete;
 
     /// 打开标准库并注入自定义 print（桥接到 Logger）
     void OpenLibs()
     {
-        auto* state = L.load().get();
-        luaL_openlibs(state);
-        lua_register(state, "print", _lua_log_print);
+        state_.open_libraries();
+        state_.set_function("print", lua_print);
     }
 
     template <typename T>
-    void DoString(T s)
+    void DoString(T code)
     {
-        const char* code = nullptr;
-        if constexpr (std::is_same_v<std::string, T>) {
-            code = s.c_str();
-        } else if constexpr (std::is_same_v<const char*, T>) {
-            code = s;
-        } else {
-            assert(false);
-        }
-        int r = luaL_dostring(L.load().get(), code);
-        if (r != LUA_OK) {
-            Engine::Utils::Logger::Log(std::string("[Lua Error]: ") + lua_tostring(L.load().get(), -1),
+        static_assert(std::is_convertible_v<T, std::string_view>,
+                      "DoString requires a string-like type");
+        try {
+            state_.safe_script(std::string_view(code));
+        } catch (const sol::error& e) {
+            Engine::Utils::Logger::Log(std::string("[Lua Error]: ") + e.what(),
                                        Engine::Utils::Logger::LogLevel::ERROR);
-            lua_pop(L.load().get(), 1);
         }
     }
 
     /// 用指定长度执行 Lua 代码（数据可能不是 null 终止的）
     void DoBuffer(const char* data, size_t size)
     {
-        int r = luaL_loadbuffer(L.load().get(), data, size, "script");
-        if (r != LUA_OK) {
-            Engine::Utils::Logger::Log(std::string("[Lua Error]: ") + lua_tostring(L.load().get(), -1),
+        try {
+            // 使用 load_buffer + safe_call 分步执行，和原有逻辑一致
+            sol::load_result load = state_.load_buffer(data, size, "script");
+            if (!load.valid()) {
+                sol::error err = load;
+                throw err;
+            }
+            sol::protected_function_result result = load();
+            if (!result.valid()) {
+                sol::error err = result;
+                throw err;
+            }
+        } catch (const sol::error& e) {
+            Engine::Utils::Logger::Log(std::string("[Lua Error]: ") + e.what(),
                                        Engine::Utils::Logger::LogLevel::ERROR);
-            lua_pop(L.load().get(), 1);
-            return;
-        }
-        r = lua_pcall(L.load().get(), 0, 0, 0);
-        if (r != LUA_OK) {
-            Engine::Utils::Logger::Log(std::string("[Lua Error]: ") + lua_tostring(L.load().get(), -1),
-                                       Engine::Utils::Logger::LogLevel::ERROR);
-            lua_pop(L.load().get(), 1);
         }
     }
+
+    auto get_state() -> sol::state& { return state_; }
 };
 }; // namespace Engine::Utils::Script

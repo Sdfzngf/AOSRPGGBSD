@@ -6,6 +6,7 @@ module;
 
 #include <cstdint>
 #include <memory>
+#include <unordered_map>
 
 export module Engine.Utils.Script.ScriptManager;
 
@@ -14,12 +15,25 @@ export import Engine.Utils.Script.Lua;
 import Engine.Utils.Data.DB;
 import Engine.Utils.Data.DataEntry.EntryType;
 import Engine.Utils.Data.DataEntry;
+import Engine.Utils.Data.DataManager;
 
 export namespace Engine::Utils::Script {
 class ScriptManager {
-public:
+private:
     LuaState L; // わたしがLです
-    auto RunScript(const std::shared_ptr<::Engine::Utils::Data::DataEntry>& DE) -> void
+    std::unordered_map<std::string, LuaState> Workers;
+    std::shared_ptr<::Engine::Utils::Data::DataManager> SDM;
+
+public:
+    auto BindDataManager(std::shared_ptr<::Engine::Utils::Data::DataManager>& dm) -> void
+    {
+        SDM = dm;
+    }
+    auto BindDataManager(const std::atomic<std::shared_ptr<::Engine::Utils::Data::DataManager>>& dm) -> void
+    {
+        SDM = dm;
+    }
+    constexpr auto RunScript(const std::shared_ptr<::Engine::Utils::Data::DataEntry>& DE) -> void
     {
         if (!DE) {
             return;
@@ -30,6 +44,17 @@ public:
                 L.DoBuffer(reinterpret_cast<const char*>(data.get()), sz);
             });
         }
+    }
+    constexpr auto RunScript(const std::string& et) -> void
+    {
+        if (!SDM) {
+            return;
+        }
+        RunScript(SDM.get()->GetEntry(et));
+    }
+    auto OpenLibs() -> void
+    {
+        L.OpenLibs();
     }
 };
 }; // namespace Engine::Utils::Script

@@ -1,0 +1,3 @@
+dbname __Engine_Test_Worker__
+add worker.lua --file "worker.lua" Script
+add workertest.lua --file "workertest.lua" Script

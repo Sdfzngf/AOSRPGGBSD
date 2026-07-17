@@ -24,12 +24,12 @@ auto Engine::Game::MainLoop() -> void
     char xr = 1, yr = 1;
     while (Running) {
         prevTime = Engine::Utils::Time::GetAppRunningTime();
-        GM.SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}", wW.load(), wH.load(), static_cast<int>(FPS)));
+        GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}", wW.load(), wH.load(), static_cast<int>(FPS)));
 
-        GM.SetBackground(100, 100, 100, 255);
-        GM.Rect(0, 0, wW, wH, 255, 0, 0, 0);
-        GM.Rect(x, y, 92, 28, 0, 0, 0, 0);
-        GM.BasicText("DVD", x / 4, y / 4, 255, 255, 255, 255, 4);
+        GM.load().get()->SetBackground(100, 100, 100, 255);
+        GM.load().get()->Rect(0, 0, wW, wH, 255, 0, 0, 0);
+        GM.load().get()->Rect(x, y, 92, 28, 0, 0, 0, 0);
+        GM.load().get()->BasicText("DVD", x / 4, y / 4, 255, 255, 255, 255, 4);
 
         if (x < 0) {
             x = 0;
@@ -50,7 +50,7 @@ auto Engine::Game::MainLoop() -> void
         x += deltaTime * xr * 100;
         y += deltaTime * yr * 100;
 
-        GM.Update(Running, wW, wH);
+        GM.load().get()->Update(Running, wW, wH);
         deltaTime = Engine::Utils::Time::GetAppRunningTime() - prevTime;
         FPS = 1 / deltaTime;
     }

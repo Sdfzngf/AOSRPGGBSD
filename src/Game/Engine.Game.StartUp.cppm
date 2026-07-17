@@ -26,10 +26,16 @@ export namespace Engine {
 auto Engine::Game::StartUp() -> void
 {
     Log("void Engine::Game::StartUp()");
+
+    DM.store(std::make_shared<Engine::Utils::Data::DataManager>());
+    SM.store(std::make_shared<Engine::Utils::Script::ScriptManager>());
+    SM.load().get()->BindDataManager(DM);
+    GM.store(std::make_shared<Engine::GUI::GUIManager>());
+
     std::string myth = Engine::Basics::Random::rand_str(256);
-    DM.CreateSnapshotAll(myth);
-    DM.MountDB("./Game/startup.dat");
-    DM.MountDB("./Lang/Lang.dat");
+    DM.load().get()->CreateSnapshotAll(myth);
+    DM.load().get()->MountDB("./Game/startup.dat");
+    DM.load().get()->MountDB("./Lang/Lang.dat");
 
     std::fstream file("./Lang/config.txt");
     std::string lang = "zh-CN";
@@ -40,7 +46,7 @@ auto Engine::Game::StartUp() -> void
 
     lang = std::string("__EG_i18n__@") + lang;
 
-    auto i18nEntry = DM.GetEntry(lang);
+    auto i18nEntry = DM.load().get()->GetEntry(lang);
     if (i18nEntry) {
         i18nEntry->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
             std::string jsonContent(reinterpret_cast<const char*>(data.get()), i18nEntry->Size.load());
@@ -48,17 +54,19 @@ auto Engine::Game::StartUp() -> void
         });
     }
 
-    SM.L.OpenLibs();
-    SM.RunScript(DM.GetEntry(std::string("__Engine_StartUp__@startup.lua")));
-    DM.MountDB("./Game/startup.dat");
+    SM.load().get()->OpenLibs();
+    SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
-    if (GM.Init("SDL") != 0)
+    DM.load().get()->MountDB("./Test/worker.dat");
+    SM.load().get()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
+
+    if (GM.load().get()->Init("SDL") != 0)
         return;
 
     wW = 640;
     wH = 480;
 
-    if (GM.CreateWindow("Game", wW, wH) != 0)
+    if (GM.load().get()->CreateWindow("Game", wW, wH) != 0)
         return;
 
     // GM.SetLogicalSize(wW, wH);

@@ -72,10 +72,20 @@ endif()
 CPMAddPackage(
     NAME lua
     GITHUB_REPOSITORY lua/lua
-    GIT_TAG v5.5.0
+    GIT_TAG v5.4.4
     OPTIONS
                 "CMAKE_EXPORT_COMPILE_COMMANDS OFF"
 )
+
+CPMAddPackage(
+    NAME sol2
+    GITHUB_REPOSITORY ThePhD/sol2
+    GIT_TAG v3.5.0
+    OPTIONS
+                "CMAKE_EXPORT_COMPILE_COMMANDS OFF"
+                "SOL2_BUILD_LUA ON"
+)
+
 
 CPMAddPackage(
     NAME nlohmann_json
@@ -105,9 +115,10 @@ add_executable(AOSRPGGBSD
 )
 
 add_custom_target(PackRes
-        COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/Game ${CMAKE_BINARY_DIR}/bin/Lang
+        COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/Game ${CMAKE_BINARY_DIR}/bin/Lang ${CMAKE_BINARY_DIR}/bin/Test
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/startup.rres ./bin/Game/startup.dat 11451
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/i18n/i18n.rres ./bin/Lang/Lang.dat Translate_ME!
+        COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/test/workertest.rres ./bin/Test/worker.dat LLLL
         COMMAND ${CMAKE_COMMAND} -DOUTPUT_FILE=${CMAKE_BINARY_DIR}/bin/Lang/config.txt -DCONTENT=zh-CN -P ${CMAKE_CURRENT_SOURCE_DIR}/write_file.cmake
         USES_TERMINAL
         VERBATIM
@@ -167,7 +178,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static replxx lua nlohmann_json::nlohmann_json)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static replxx lua sol2 nlohmann_json::nlohmann_json)
 
 # ── 快照功能测试 ──
 # add_executable(test_snapshot
