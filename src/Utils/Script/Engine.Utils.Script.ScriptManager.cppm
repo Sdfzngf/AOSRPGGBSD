@@ -21,6 +21,7 @@ import Engine.Utils.Data.DataEntry.EntryType;
 import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Logger;
+import Engine.GUI.GUIManager;
 
 export namespace Engine::Utils::Script {
 
@@ -30,6 +31,7 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Worker>> Workers;
     mutable std::mutex workers_mtx;
     std::shared_ptr<::Engine::Utils::Data::DataManager> SDM;
+    std::shared_ptr<::Engine::GUI::GUIManager> SGM;
 
 public:
     auto BindDataManager(std::shared_ptr<::Engine::Utils::Data::DataManager>& dm) -> void
@@ -75,7 +77,7 @@ public:
     {
         if (!SDM) {
             ::Engine::Utils::Logger::Log("[ScriptManager] CreateWorker: DataManager not bound",
-                                       ::Engine::Utils::Logger::LogLevel::ERROR);
+                                         ::Engine::Utils::Logger::LogLevel::ERROR);
             return false;
         }
 

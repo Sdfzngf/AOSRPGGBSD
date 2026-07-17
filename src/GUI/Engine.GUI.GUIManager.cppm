@@ -10,6 +10,7 @@ module;
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 
 export module Engine.GUI.GUIManager;
