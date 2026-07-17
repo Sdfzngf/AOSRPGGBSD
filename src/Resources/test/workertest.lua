@@ -18,5 +18,4 @@ local ok2 = dm.create_worker("test_worker", "__Engine_Test_Worker__@worker.lua")
 if not ok2 then
     print("[workertest] Correctly refused duplicate worker name 'test_worker'")
 end
-
-print("[workertest] Test script done")
+print("[workertest] 啊")

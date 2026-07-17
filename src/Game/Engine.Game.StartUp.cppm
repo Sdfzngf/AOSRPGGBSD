@@ -59,7 +59,7 @@ auto Engine::Game::StartUp() -> void
     SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     DM.load().get()->MountDB("./Test/worker.dat");
-    SM.load().get()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
+    // SM.load().get()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
 
     if (GM.load().get()->Init("SDL") != 0)
         return;

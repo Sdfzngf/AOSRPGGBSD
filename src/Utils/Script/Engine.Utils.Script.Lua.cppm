@@ -5,10 +5,12 @@
 module;
 
 #include <cassert>
+#include <chrono>
 #include <lua.hpp>
 #include <sol/sol.hpp>
 #include <sol/state.hpp>
 #include <string>
+#include <thread>
 #include <type_traits>
 
 export module Engine.Utils.Script.Lua;
@@ -48,6 +50,9 @@ public:
     {
         state_.open_libraries();
         state_.set_function("print", lua_print);
+        state_.set_function("sleep", [](int ms) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+        });
     }
 
     template <typename T>

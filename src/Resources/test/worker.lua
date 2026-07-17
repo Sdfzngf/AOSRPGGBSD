@@ -41,5 +41,4 @@ if child_handle then
 else
     print("[worker] Failed to create child worker")
 end
-
 print("[worker] Worker done, exiting")

@@ -9,6 +9,7 @@ module;
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
+#include <thread>
 
 module Engine.Utils.Script.ScriptManager:functions;
 
