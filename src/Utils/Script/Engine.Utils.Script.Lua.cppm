@@ -4,10 +4,8 @@
  */
 module;
 
-#include <atomic>
 #include <cassert>
 #include <lua.hpp>
-#include <memory>
 #include <sol/sol.hpp>
 #include <sol/state.hpp>
 #include <string>

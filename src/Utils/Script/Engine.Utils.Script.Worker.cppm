@@ -11,10 +11,10 @@ module;
 #include <cstring>
 #include <functional>
 #include <memory>
-#include <string>
-#include <thread>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
+#include <string>
+#include <thread>
 
 export module Engine.Utils.Script.Worker;
 
@@ -32,11 +32,11 @@ public:
     /// spawn_callback: (worker_name, entry_key) → shared_ptr<Worker>（nullptr 表示失败）
     using SpawnCallback = std::function<std::shared_ptr<Worker>(const std::string&, const std::string&)>;
 
-    Worker(const std::string& name,
+    Worker(std::string name,
            std::shared_ptr<::Engine::Utils::Data::DataManager> dm,
            const std::string& entry_key,
            SpawnCallback spawn_cb)
-        : name_(name)
+        : name_(std::move(name))
         , dm_(std::move(dm))
         , spawn_callback_(std::move(spawn_cb))
     {
@@ -57,24 +57,24 @@ public:
     Worker(Worker&&) = delete;
     auto operator=(Worker&&) -> Worker& = delete;
 
-    void Join()
+    auto Join() -> void
     {
         if (thread_.joinable()) {
             thread_.join();
         }
     }
 
-    bool IsRunning() const { return running_.load(); }
-    const std::string& GetName() const { return name_; }
+    [[nodiscard]] auto IsRunning() const -> bool { return running_.load(); }
+    [[nodiscard]] auto GetName() const -> const std::string& { return name_; }
 
     /// 将 nlohmann::json 转为 sol Lua 值（供 ScriptManager 复用）
-    static sol::object JsonToSol_LuaState(const json& j, LuaState& lua)
+    static auto JsonToSol_LuaState(const json& j, LuaState& lua) -> sol::object
     {
         return JsonToSolImpl(j, lua.get_state());
     }
 
     /// 将 sol::table 递归转换为 nlohmann::json（供 ScriptManager 复用）
-    static json SolTableToJson(sol::table tbl)
+    static auto SolTableToJson(const sol::table& tbl) -> json
     {
         bool is_array = true;
         for (auto& kv : tbl) {
@@ -88,12 +88,23 @@ public:
             for (auto& kv : tbl) {
                 sol::object val = kv.second;
                 switch (val.get_type()) {
-                case sol::type::boolean: result.push_back(val.as<bool>()); break;
-                case sol::type::number: result.push_back(val.as<double>()); break;
-                case sol::type::string: result.push_back(val.as<std::string>()); break;
-                case sol::type::table: result.push_back(SolTableToJson(val.as<sol::table>())); break;
-                case sol::type::nil: result.push_back(nullptr); break;
-                default: break;
+                case sol::type::boolean:
+                    result.push_back(val.as<bool>());
+                    break;
+                case sol::type::number:
+                    result.push_back(val.as<double>());
+                    break;
+                case sol::type::string:
+                    result.push_back(val.as<std::string>());
+                    break;
+                case sol::type::table:
+                    result.push_back(SolTableToJson(val.as<sol::table>()));
+                    break;
+                case sol::type::nil:
+                    result.push_back(nullptr);
+                    break;
+                default:
+                    break;
                 }
             }
             return result;
@@ -103,12 +114,23 @@ public:
                 std::string k = kv.first.as<std::string>();
                 sol::object val = kv.second;
                 switch (val.get_type()) {
-                case sol::type::boolean: result[k] = val.as<bool>(); break;
-                case sol::type::number: result[k] = val.as<double>(); break;
-                case sol::type::string: result[k] = val.as<std::string>(); break;
-                case sol::type::table: result[k] = SolTableToJson(val.as<sol::table>()); break;
-                case sol::type::nil: result[k] = nullptr; break;
-                default: break;
+                case sol::type::boolean:
+                    result[k] = val.as<bool>();
+                    break;
+                case sol::type::number:
+                    result[k] = val.as<double>();
+                    break;
+                case sol::type::string:
+                    result[k] = val.as<std::string>();
+                    break;
+                case sol::type::table:
+                    result[k] = SolTableToJson(val.as<sol::table>());
+                    break;
+                case sol::type::nil:
+                    result[k] = nullptr;
+                    break;
+                default:
+                    break;
                 }
             }
             return result;
@@ -133,7 +155,7 @@ private:
             }
 
             uint32_t sz = entry->GetSize();
-            entry->Read([&lua, sz](const std::shared_ptr<uint8_t[]>& data) {
+            entry->Read([&lua, sz](const std::shared_ptr<uint8_t[]>& data) -> void {
                 lua.DoBuffer(reinterpret_cast<const char*>(data.get()), sz);
             });
         } catch (const std::exception& e) {
@@ -161,7 +183,7 @@ private:
             }
 
             std::string json_str;
-            entry->Read([&](const std::shared_ptr<uint8_t[]>& data) {
+            entry->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
                 uint32_t sz = entry->GetSize();
                 json_str.assign(reinterpret_cast<const char*>(data.get()), sz);
             });
@@ -182,7 +204,7 @@ private:
         });
 
         // ── dm:write(key, table) ──
-        dm_table.set_function("write", [this](const std::string& key, sol::table tbl) {
+        dm_table.set_function("write", [this](const std::string& key, const sol::table& tbl) -> void {
             try {
                 json j = SolTableToJson(tbl);
                 std::string json_str = j.dump();
@@ -198,7 +220,7 @@ private:
                     auto new_entry = std::make_shared<::Engine::Utils::Data::DataEntry>();
                     new_entry->SetName(key);
                     new_entry->New(json_str.size());
-                    new_entry->Write([&](const std::shared_ptr<uint8_t[]>& data) {
+                    new_entry->Write([&](const std::shared_ptr<uint8_t[]>& data) -> void {
                         memcpy(data.get(), json_str.data(), json_str.size());
                     });
                     dm_->InsertEntry(key, new_entry);
@@ -219,7 +241,7 @@ private:
             // 返回 handle table：{ join = fn, is_running = fn }
             auto handle = lua.get_state().create_table();
             auto w_ptr = std::make_shared<std::shared_ptr<Worker>>(std::move(worker));
-            handle["join"] = [w_ptr]() {
+            handle["join"] = [w_ptr]() -> void {
                 (*w_ptr)->Join();
             };
             handle["is_running"] = [w_ptr]() -> bool {
@@ -250,7 +272,7 @@ private:
     }
 
     /// 将 nlohmann::json 转为 sol Lua 值（内部实现，接受 sol::state&）
-    static sol::object JsonToSolImpl(const json& j, sol::state& state)
+    static auto JsonToSolImpl(const json& j, sol::state& state) -> sol::object
     {
         switch (j.type()) {
         case json::value_t::null:
@@ -287,8 +309,8 @@ private:
     std::string name_;
     std::shared_ptr<::Engine::Utils::Data::DataManager> dm_;
     SpawnCallback spawn_callback_;
-    std::atomic<bool> running_{false};
-    std::atomic<bool> should_exit_{false};
+    std::atomic<bool> running_ { false };
+    std::atomic<bool> should_exit_ { false };
     std::thread thread_;
 };
 

@@ -5,10 +5,10 @@
  */
 module;
 
-#include <memory>
-#include <sol/sol.hpp>
-#include <nlohmann/json.hpp>
 #include <cstring>
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <sol/sol.hpp>
 
 module Engine.Utils.Script.ScriptManager:functions;
 
@@ -30,22 +30,28 @@ auto ScriptManager::SetupMainDMAPI() -> void
     });
 
     dm_table.set_function("read", [this](const std::string& key) -> sol::object {
-        if (!SDM) return sol::lua_nil;
+        if (!SDM)
+            return sol::lua_nil;
         auto entry = SDM->GetEntry(key);
-        if (!entry) return sol::lua_nil;
+        if (!entry)
+            return sol::lua_nil;
         std::string json_str;
-        entry->Read([&](const std::shared_ptr<uint8_t[]>& data) {
+        entry->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
             json_str.assign(reinterpret_cast<const char*>(data.get()), entry->GetSize());
         });
-        if (json_str.empty()) return sol::lua_nil;
+        if (json_str.empty())
+            return sol::lua_nil;
         try {
             auto parsed = nlohmann::json::parse(json_str);
             return Worker::JsonToSol_LuaState(parsed, L);
-        } catch (...) { return sol::lua_nil; }
+        } catch (...) {
+            return sol::lua_nil;
+        }
     });
 
-    dm_table.set_function("write", [this](const std::string& key, sol::table tbl) {
-        if (!SDM) return;
+    dm_table.set_function("write", [this](const std::string& key, const sol::table& tbl) -> void {
+        if (!SDM)
+            return;
         try {
             auto j = Worker::SolTableToJson(tbl);
             std::string json_str = j.dump();
@@ -58,19 +64,20 @@ auto ScriptManager::SetupMainDMAPI() -> void
                 auto new_entry = std::make_shared<::Engine::Utils::Data::DataEntry>();
                 new_entry->SetName(key);
                 new_entry->New(json_str.size());
-                new_entry->Write([&](const std::shared_ptr<uint8_t[]>& data) {
+                new_entry->Write([&](const std::shared_ptr<uint8_t[]>& data) -> void {
                     memcpy(data.get(), json_str.data(), json_str.size());
                 });
                 SDM->InsertEntry(key, new_entry);
             }
         } catch (const std::exception& e) {
             ::Engine::Utils::Logger::Log(std::string("[Main] dm:write error: ") + e.what(),
-                                       ::Engine::Utils::Logger::LogLevel::ERROR);
+                                         ::Engine::Utils::Logger::LogLevel::ERROR);
         }
     });
 
     dm_table.set_function("list_keys", [this]() -> std::vector<std::string> {
-        if (!SDM) return {};
+        if (!SDM)
+            return { };
         return SDM->GetList();
     });
 
