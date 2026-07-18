@@ -258,6 +258,10 @@ public:
         case GUIlib::_l_SDL: {
             lW = -1;
             lH = -1;
+            int wwww = 640, hhhh = 480;
+            SDL_GetWindowSize(window.load().get(), &wwww, &hhhh);
+            *wW = wwww;
+            *wH = hhhh;
             SDL_SetRenderLogicalPresentation(renderer.load().get(), lW, lH, SDL_LOGICAL_PRESENTATION_DISABLED);
             return;
         }

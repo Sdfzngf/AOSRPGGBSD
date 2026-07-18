@@ -58,7 +58,6 @@ auto Engine::Game::StartUp() -> void
     SM.load().get()->OpenLibs();
     SM.load().get()->SetupMainDMAPI();
     SM.load().get()->SetupGUILuaAPI();
-    SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     DM.load().get()->MountDB("./Test/worker.dat");
     // SM.load().get()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
@@ -75,6 +74,8 @@ auto Engine::Game::StartUp() -> void
         return;
 
     GM.load().get()->SetLogicalSizeM(1280, 720);
+
+    SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     Running = true;
 
