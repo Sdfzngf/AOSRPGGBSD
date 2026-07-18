@@ -4,6 +4,7 @@
  */
 module;
 
+#include <cmath>
 module Engine.Game:MainLoop;
 
 import Engine.Game;
@@ -22,12 +23,12 @@ auto Engine::Game::MainLoop() -> void
     double FPS = 0.0;
     float x = 0.0f, y = 0.0f;
     char xr = 1, yr = 1;
+    int i = 0;
     while (Running) {
         prevTime = Engine::Utils::Time::GetAppRunningTime();
 
         GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}", wW.load(), wH.load(), static_cast<int>(FPS)));
 
-        // C++ 渲染命令推入队列（和 Lua 命令统一由 FlushCommands 排序执行）
         GM.load().get()->SetBackgroundM(0, 0, 0, 255, -2147483648);
         GM.load().get()->FillRectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 100, 100, 100, 100, -2147483647);
         GM.load().get()->RectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 255, 0, 0, 0, 1);
@@ -57,8 +58,10 @@ auto Engine::Game::MainLoop() -> void
         y += deltaTime * yr * 100;
 
         GM.load().get()->Update(Running);
+
         deltaTime = Engine::Utils::Time::GetAppRunningTime() - prevTime;
         FPS = 1 / deltaTime;
+        i++;
     }
 }
 }

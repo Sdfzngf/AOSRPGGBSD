@@ -222,7 +222,16 @@ private:
             // 用协程执行脚本（自动检测帧模式）
             sol::coroutine cr(load);
             auto r1 = cr();
-            if (r1.valid() && r1.status() == sol::call_status::ok) {
+            if (!r1.valid()) {
+                sol::error err = r1;
+                Engine::Utils::Logger::Log(
+                    std::string("[Worker ") + name_ + "]: Lua error: " + err.what(),
+                    Engine::Utils::Logger::LogLevel::ERROR);
+                running_.store(false);
+                init_done_.store(true);
+                return;
+            }
+            if (r1.status() == sol::call_status::ok) {
                 // 普通 Worker：脚本执行完没 yield，直接退出
                 running_.store(false);
                 init_done_.store(true);
@@ -252,7 +261,14 @@ private:
                 frame_busy_.store(false);
                 frame_done_cv_.notify_one();
 
-                if (!r2.valid() || r2.status() == sol::call_status::ok) {
+                if (!r2.valid()) {
+                    sol::error err = r2;
+                    Engine::Utils::Logger::Log(
+                        std::string("[Worker ") + name_ + "]: Lua runtime error: " + err.what(),
+                        Engine::Utils::Logger::LogLevel::ERROR);
+                    break;
+                }
+                if (r2.status() == sol::call_status::ok) {
                     break; // 脚本正常结束
                 }
             }
