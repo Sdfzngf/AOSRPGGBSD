@@ -77,6 +77,8 @@ auto Engine::Game::StartUp() -> void
 
     SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
+    GM.load().get()->FlushCommands();
+
     Running = true;
 
     DM.load().get()->MountDB("./Game/background.dat");

@@ -28,8 +28,9 @@ auto Engine::Game::MainLoop() -> void
         GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}", wW.load(), wH.load(), static_cast<int>(FPS)));
 
         // C++ 渲染命令推入队列（和 Lua 命令统一由 FlushCommands 排序执行）
-        GM.load().get()->SetBackgroundM(100, 100, 100, 255, 0);
-        GM.load().get()->RectM(0, 0, wW, wH, 255, 0, 0, 0, 1);
+        GM.load().get()->SetBackgroundM(0, 0, 0, 255, -2147483648);
+        GM.load().get()->FillRectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 100, 100, 100, 100, -2147483647);
+        GM.load().get()->RectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 255, 0, 0, 0, 1);
         GM.load().get()->RectM(x, y, 92, 28, 0, 0, 0, 0, 5);
         GM.load().get()->TextM("DVD", x, y, 255, 255, 255, 255, 4, 5);
 

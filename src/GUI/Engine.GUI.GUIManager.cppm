@@ -4,6 +4,7 @@
  */
 module;
 
+#include "SDL3/SDL_pixels.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_video.h"
 #include <SDL3/SDL.h>
@@ -59,17 +60,22 @@ struct CmdSetLogicalSize {
 struct CmdDisableLogicalSize {
     int z_order = 0;
 };
+struct CmdFillRect {
+    float x, y, w, h;
+    uint8_t r, g, b, a;
+    int z_order = 0;
+};
 
 using RenderCommand = std::variant<
     CmdSetBackground,
     CmdRect,
     CmdText,
     CmdSetTitle,
-    CmdSetLogicalSize, CmdDisableLogicalSize>;
+    CmdSetLogicalSize, CmdDisableLogicalSize, CmdFillRect>;
 
-inline int get_z_order(const RenderCommand& cmd)
+inline auto get_z_order(const RenderCommand& cmd) -> int
 {
-    return std::visit([](const auto& c) { return c.z_order; }, cmd);
+    return std::visit([](const auto& c) -> int { return c.z_order; }, cmd);
 }
 
 class GUIManager {
@@ -173,14 +179,15 @@ public:
 
         // 多于 1 条命令时才排序
         if (cmd_queue_front_.size() > 1) {
-            std::stable_sort(cmd_queue_front_.begin(), cmd_queue_front_.end(),
-                             [](const RenderCommand& a, const RenderCommand& b) {
-                                 return get_z_order(a) < get_z_order(b);
-                             });
+            // std::stable_sort(cmd_queue_front_.begin(), cmd_queue_front_.end(),
+            //                  [](const RenderCommand& a, const RenderCommand& b) -> bool {
+            //                      return get_z_order(a) < get_z_order(b);
+            //                  });
+            std::ranges::stable_sort(cmd_queue_front_, std::ranges::less { }, &get_z_order);
         }
 
         for (const auto& cmd : cmd_queue_front_) {
-            std::visit([this](const auto& c) {
+            std::visit([this](const auto& c) -> void {
                 using T = std::decay_t<decltype(c)>;
                 if constexpr (std::is_same_v<T, CmdSetBackground>) {
                     // Lua 背景用 FillRect 而非 RenderClear，避免清除 C++ 渲染内容
@@ -200,6 +207,8 @@ public:
                     SetLogicalSize(c.w, c.h);
                 else if constexpr (std::is_same_v<T, CmdDisableLogicalSize>)
                     DisableLogicalSize();
+                else if constexpr (std::is_same_v<T, CmdFillRect>)
+                    FillRect(c.x, c.y, c.w, c.h, c.r, c.g, c.b, c.a);
             },
                        cmd);
         }
@@ -231,6 +240,10 @@ public:
     auto DisableLogicalSizeM() -> void
     {
         PushCommand(CmdDisableLogicalSize { });
+    }
+    auto FillRectM(float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, int z = 0) -> void
+    {
+        PushCommand(CmdFillRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z });
     }
 
     // ── 直接渲染接口（主线程 C++ 调用，不走队列） ──
@@ -342,6 +355,25 @@ public:
             };
             SDL_SetRenderDrawColor(renderer.load().get(), r, g, b, a);
             SDL_RenderRect(renderer.load().get(), &R);
+            return;
+        }
+        case GUIlib::_l_nul:
+            return;
+        }
+    }
+
+    auto FillRect(float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a) -> void
+    {
+        switch (glb) {
+        case GUIlib::_l_SDL: {
+            SDL_FRect R {
+                .x = x,
+                .y = y,
+                .w = w,
+                .h = h
+            };
+            SDL_SetRenderDrawColor(renderer.load().get(), r, g, b, a);
+            SDL_RenderFillRect(renderer.load().get(), &R);
             return;
         }
         case GUIlib::_l_nul:
