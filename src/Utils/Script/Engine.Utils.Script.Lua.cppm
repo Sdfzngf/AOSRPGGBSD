@@ -16,6 +16,9 @@ module;
 export module Engine.Utils.Script.Lua;
 
 import Engine.Utils.Logger;
+import Engine.i18n;
+
+using Engine::i18n::locale;
 
 namespace {
 auto lua_print(sol::variadic_args va, sol::this_state ts) -> void
@@ -50,8 +53,38 @@ public:
     {
         state_.open_libraries();
         state_.set_function("print", lua_print);
-        state_.set_function("sleep", [](int ms) {
+        state_.set_function("sleep", [](int ms) -> void {
             std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+        });
+        state_.set_function("i18n_fmt", [](const std::string& key, sol::variadic_args args) -> std::string {
+            std::string result = locale(key);
+
+            std::vector<std::string> arg_strs;
+            arg_strs.reserve(args.size());
+            for (auto arg : args) {
+                if (arg.is<std::string>()) {
+                    arg_strs.push_back(arg.as<std::string>());
+                } else if (arg.is<int>()) {
+                    arg_strs.push_back(std::to_string(arg.as<int>()));
+                } else if (arg.is<double>()) {
+                    arg_strs.push_back(std::to_string(arg.as<double>()));
+                } else if (arg.is<bool>()) {
+                    arg_strs.emplace_back(arg.as<bool>() ? "true" : "false");
+                } else {
+                    arg_strs.emplace_back("[unsupported]");
+                }
+            }
+
+            size_t pos = 0;
+            for (const auto& s : arg_strs) {
+                pos = result.find("{}", pos);
+                if (pos == std::string::npos)
+                    break;
+                result.replace(pos, 2, s);
+                pos += s.length();
+            }
+
+            return result;
         });
     }
 

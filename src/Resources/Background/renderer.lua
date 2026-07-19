@@ -10,5 +10,9 @@ while true do
     gui.text("wa da xi wa L de su",0,0,255,0,0,255,4,114514)
     gui.text("zhe hang zi shi lua hui zhi chu lai de",0,400,255,0,0,255,3,114514)
     gui.text(tostring(dt) .. "," .. tostring(os.time()),0,100,255,0,0,255,2,114514)
-    gui.text(tostring(os.time()-bg),math.sin(elapsed)*200+320,math.cos(elapsed)*200+240,math.floor(math.cos(elapsed*1)*255/2),math.floor(math.cos(elapsed*2)*255/2),math.floor(math.cos(elapsed*3)*255/2),255,5,114514)
+    red = 0.5 + 0.5 * math.sin(elapsed)
+    green = 0.5 + 0.5 * math.sin(elapsed + math.pi * 2 / 3)
+    blue = 0.5 + 0.5 * math.sin(elapsed + math.pi * 4 / 3)
+    gui.text(tostring(os.time()-
+    bg),math.sin(elapsed)*200+320,math.cos(elapsed)*200+240,math.floor(red*255),math.floor(green*255),math.floor(blue*255),255,5,114514)
 end

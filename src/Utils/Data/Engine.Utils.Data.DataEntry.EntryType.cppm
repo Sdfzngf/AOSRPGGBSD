@@ -15,6 +15,7 @@ enum class EntryType : uint8_t {
     List = 2,
     Script = 3,
     png = 4,
-    svg = 5
+    svg = 5,
+    wav = 6
 };
 }

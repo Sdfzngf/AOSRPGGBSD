@@ -55,6 +55,8 @@ static auto ParseEntryType(const std::string& typeText) -> uint32_t
         return 4;
     if (typeText == "5" || typeText == "svg" || typeText == "SVG")
         return 5;
+    if (typeText == "6" || typeText == "wav" || typeText == "WAV")
+        return 6;
     return 0;
 }
 
