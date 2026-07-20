@@ -84,16 +84,12 @@ public:
     {
         if (!frame_mode_.load())
             return;
-        {
-            std::lock_guard lock(frame_mtx_);
-            frame_dt_ = dt;
-            frame_ready_ = true;
-        }
+        std::unique_lock lock(frame_sync_mtx_);
+        frame_dt_ = dt;
+        frame_ready_ = true;
         frame_cv_.notify_one();
-
-        // 等待 Worker 完成帧渲染（阻塞主线程，确保命令已推入队列）
-        std::unique_lock lock(frame_done_mtx_);
-        frame_done_cv_.wait(lock, [this] -> bool { return !frame_busy_.load(); });
+        // 等待 Worker 完成帧（frame_ready_ 被 Worker 清除表示完成）
+        frame_cv_.wait(lock, [this] -> bool { return !frame_ready_; });
     }
 
     /// 通知帧模式 Worker 退出（Shutdown 时调用）
@@ -244,23 +240,21 @@ private:
             init_done_.store(true);
 
             while (running_.load() && !should_exit_.load()) {
-                // 等待主线程唤醒
                 {
-                    std::unique_lock lock(frame_mtx_);
+                    std::unique_lock lock(frame_sync_mtx_);
                     frame_cv_.wait(lock, [this] { return frame_ready_ || should_exit_.load(); });
                     if (should_exit_.load())
                         break;
-                    frame_ready_ = false;
                 }
-
-                // 标记忙碌，resume 协程执行帧逻辑
-                frame_busy_.store(true);
+                // 锁在此释放 → 执行帧（不持锁）→ 帧完成后再获取锁通知主线程
 
                 auto r2 = cr(frame_dt_);
 
-                // 帧逻辑完成（Lua 已 yield，命令已推入队列）
-                frame_busy_.store(false);
-                frame_done_cv_.notify_one();
+                {
+                    std::lock_guard lock(frame_sync_mtx_);
+                    frame_ready_ = false; // 帧完成，清除 ready 唤醒主线程
+                    frame_cv_.notify_one();
+                }
 
                 if (!r2.valid()) {
                     sol::error err = r2;
@@ -503,13 +497,10 @@ private:
     std::atomic<bool> should_exit_ { false };
     std::atomic<bool> init_done_ { false };
     std::atomic<bool> frame_mode_ { false };
-    std::mutex frame_mtx_;
+    std::mutex frame_sync_mtx_;
     std::condition_variable frame_cv_;
     double frame_dt_ { 0.0 };
     bool frame_ready_ { false };
-    std::atomic<bool> frame_busy_ { false };
-    std::mutex frame_done_mtx_;
-    std::condition_variable frame_done_cv_;
     std::thread thread_;
 };
 
