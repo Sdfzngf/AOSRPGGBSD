@@ -4,13 +4,16 @@
  */
 module;
 
-#include "SDL3/SDL_pixels.h"
+#include "SDL3/SDL_iostream.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_video.h"
 #include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <cstdio>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -22,6 +25,8 @@ export module Engine.GUI.GUIManager;
 import Engine.Utils.Logger;
 import Engine.Utils.Logger.LogLevel;
 import Engine.i18n;
+import Engine.Utils.Data.DataManager;
+import Engine.Utils.Data.DataEntry;
 
 using Engine::Utils::Logger::Log;
 
@@ -42,11 +47,21 @@ struct CmdRect {
     uint8_t r, g, b, a;
     int z_order = 0;
 };
-struct CmdText {
+struct CmdDebugText {
     std::string s;
     float x, y;
     uint8_t r, g, b, a;
     float size;
+    int z_order = 0;
+};
+struct CmdText {
+    std::string s;
+    std::string font;
+    float x, y;
+    uint8_t r, g, b, a;
+    uint8_t br, bg, bb, ba;
+    float size;
+    int quality;
     int z_order = 0;
 };
 struct CmdSetTitle {
@@ -69,9 +84,9 @@ struct CmdFillRect {
 using RenderCommand = std::variant<
     CmdSetBackground,
     CmdRect,
-    CmdText,
+    CmdDebugText,
     CmdSetTitle,
-    CmdSetLogicalSize, CmdDisableLogicalSize, CmdFillRect>;
+    CmdSetLogicalSize, CmdDisableLogicalSize, CmdFillRect, CmdText>;
 
 inline auto get_z_order(const RenderCommand& cmd) -> int
 {
@@ -87,6 +102,7 @@ private:
     int lW = -1, lH = -1;
     std::atomic<int>* wW; // NOLINT
     std::atomic<int>* wH; // NOLINT
+    std::atomic<std::shared_ptr<Engine::Utils::Data::DataManager>> DM_;
 
     // 双缓冲命令队列（线程安全，生产者写 back，消费者读 front）
     std::vector<RenderCommand> cmd_queue_front_;
@@ -100,7 +116,11 @@ public:
         if (guilib == "SDL") {
             SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
             if (!SDL_Init(SDL_INIT_VIDEO)) {
-                Log([&guilib]() -> std::string { return Engine::i18n::fmt("无法初始化{}: {}", guilib, SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
+                Log([&guilib]() -> std::string { return Engine::i18n::fmt("无法初始化{}: {}", "SDL3", SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
+                return 1;
+            }
+            if (!TTF_Init()) {
+                Log([&guilib]() -> std::string { return Engine::i18n::fmt("无法初始化{}: {}", "SDL_TTF", SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
                 return 1;
             }
             glb = GUIlib::_l_SDL;
@@ -117,6 +137,11 @@ public:
     {
         wW = ww;
         wH = wh;
+    }
+
+    auto BindDM(std::shared_ptr<Engine::Utils::Data::DataManager> ddmm) -> void
+    {
+        DM_ = ddmm;
     }
 
     [[nodiscard]] auto CreateWindow(const std::string& name) -> int
@@ -190,7 +215,6 @@ public:
             std::visit([this](const auto& c) -> void {
                 using T = std::decay_t<decltype(c)>;
                 if constexpr (std::is_same_v<T, CmdSetBackground>) {
-                    // Lua 背景用 FillRect 而非 RenderClear，避免清除 C++ 渲染内容
                     // int ww = 0, hh = 0;
                     // SDL_GetWindowSize(window.load().get(), &ww, &hh);
                     // SDL_FRect bg { .x = 0, .y = 0, .w = (float)ww, .h = (float)hh };
@@ -199,8 +223,8 @@ public:
                     SetBackground(c.r, c.g, c.b, c.a);
                 } else if constexpr (std::is_same_v<T, CmdRect>)
                     Rect(c.x, c.y, c.w, c.h, c.r, c.g, c.b, c.a);
-                else if constexpr (std::is_same_v<T, CmdText>)
-                    BasicText(c.s, c.x, c.y, c.r, c.g, c.b, c.a, c.size);
+                else if constexpr (std::is_same_v<T, CmdDebugText>)
+                    DebugText(c.s, c.x, c.y, c.r, c.g, c.b, c.a, c.size);
                 else if constexpr (std::is_same_v<T, CmdSetTitle>)
                     SetWindowTitle(c.title);
                 else if constexpr (std::is_same_v<T, CmdSetLogicalSize>)
@@ -209,6 +233,8 @@ public:
                     DisableLogicalSize();
                 else if constexpr (std::is_same_v<T, CmdFillRect>)
                     FillRect(c.x, c.y, c.w, c.h, c.r, c.g, c.b, c.a);
+                else if constexpr (std::is_same_v<T, CmdText>)
+                    Text(c.s, c.font, c.x, c.y, c.r, c.g, c.b, c.a, c.br, c.bg, c.bb, c.ba, c.size, c.quality);
             },
                        cmd);
         }
@@ -225,9 +251,9 @@ public:
     {
         PushCommand(CmdRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z });
     }
-    auto TextM(const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, int z = 0) -> void
+    auto DebugTextM(const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, int z = 0) -> void
     {
-        PushCommand(CmdText { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z });
+        PushCommand(CmdDebugText { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z });
     }
     auto SetTitleM(const std::string& title, int z = 0) -> void
     {
@@ -244,6 +270,15 @@ public:
     auto FillRectM(float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, int z = 0) -> void
     {
         PushCommand(CmdFillRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z });
+    }
+    auto TextM(const std::string& te, const std::string& fname,
+               float _x, float _y,
+               uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
+               uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
+               float ptsize,
+               int quality, int z = 0) -> void
+    {
+        PushCommand(CmdText { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = ptsize, .quality = quality, .z_order = z });
     }
 
     // ── 直接渲染接口（主线程 C++ 调用，不走队列） ──
@@ -381,7 +416,7 @@ public:
         }
     }
 
-    auto BasicText(const std::string& s, const float& x, const float& y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size) -> void
+    auto DebugText(const std::string& s, const float& x, const float& y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size) -> void
     {
         switch (glb) {
         case GUIlib::_l_SDL: {
@@ -389,6 +424,130 @@ public:
             SDL_SetRenderScale(renderer.load().get(), size, size);
             SDL_RenderDebugText(renderer.load().get(), x / size, y / size, s.c_str());
             SDL_SetRenderScale(renderer.load().get(), 1.0f, 1.0f);
+            return;
+        }
+        case GUIlib::_l_nul:
+            return;
+        }
+    }
+
+    auto Text(const std::string& te, const std::string& fname,
+              float _x, float _y,
+              uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
+              uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
+              float ptsize,
+              int quality) -> void
+    {
+        switch (glb) {
+        case GUIlib::_l_SDL: {
+            struct font {
+                std::shared_ptr<Engine::Utils::Data::DataEntry> et;
+                std::map<float, std::shared_ptr<TTF_Font>> _f;
+                bool _finit = false;
+            };
+
+            auto rf = DM_.load()->GetEntry(fname);
+            if (!rf)
+                return;
+
+            const std::string cacheKey = fname + "::ptr::SDL_TTF<-NOSNAPSHOT";
+            auto fEntry = DM_.load()->GetEntry(cacheKey);
+
+            // 若缓存条目不存在，则创建
+            if (!fEntry) {
+                auto et = std::make_shared<Engine::Utils::Data::DataEntry>();
+                et->New<font>();
+                bool success = et->Write([&rf, ptsize](std::shared_ptr<uint8_t[]>& d) -> bool {
+                    auto fffff = std::reinterpret_pointer_cast<font>(d).get();
+
+                    fffff->et = rf;
+
+                    SDL_IOStream* sio = SDL_IOFromConstMem(fffff->et->Data.load().get(),
+                                                           fffff->et->Size.load());
+                    if (!sio) {
+                        // fffff->~font(); // 必须手动析构
+                        return false;
+                    }
+                    TTF_Font* tfb = TTF_OpenFontIO(sio, true, ptsize);
+                    if (!tfb) {
+                        SDL_CloseIO(sio);
+                        // fffff->~font();
+                        return false;
+                    }
+                    fffff->_f[ptsize] = std::shared_ptr<TTF_Font>(tfb, TTF_CloseFont);
+                    return true;
+                });
+                if (!success)
+                    return;
+                DM_.load()->InsertEntry(cacheKey, et);
+                fEntry = et; // 继续使用新创建的条目
+            }
+
+            // 获取字体对象
+            auto fffff = reinterpret_cast<font*>(fEntry->Data.load().get());
+
+            // 确保当前字号已缓存
+            auto it = fffff->_f.find(ptsize);
+            if (it == fffff->_f.end()) {
+                // 未缓存，动态创建
+                SDL_IOStream* sio = SDL_IOFromConstMem(fffff->et->Data.load().get(),
+                                                       fffff->et->Size.load());
+                if (!sio)
+                    return;
+                TTF_Font* tfb = TTF_OpenFontIO(sio, true, ptsize);
+                if (!tfb) {
+                    SDL_CloseIO(sio);
+                    return;
+                }
+                auto newFont = std::shared_ptr<TTF_Font>(tfb, TTF_CloseFont);
+                auto [insertIt, inserted] = fffff->_f.emplace(ptsize, newFont);
+                it = insertIt;
+            }
+
+            // 获取字体原始指针
+            TTF_Font* fontPtr = it->second.get();
+
+            // 渲染文本
+            SDL_Color c { .r = _r, .g = _g, .b = _b, .a = _a };
+            SDL_Color bc { .r = _br, .g = _bg, .b = _bb, .a = _ba };
+            SDL_Surface* sur = nullptr;
+
+            switch (quality) {
+            default:
+                [[fallthrough]];
+            case 0:
+                sur = TTF_RenderText_Solid(fontPtr, te.c_str(), te.length(), c);
+                break;
+            case 1:
+                sur = TTF_RenderText_Shaded(fontPtr, te.c_str(), te.length(), c, bc);
+                break;
+            case 2:
+                sur = TTF_RenderText_Blended(fontPtr, te.c_str(), te.length(), c);
+                break;
+            case 3:
+                sur = TTF_RenderText_LCD(fontPtr, te.c_str(), te.length(), c, bc);
+                break;
+            }
+
+            if (sur) {
+                if (auto tex = SDL_CreateTextureFromSurface(renderer.load().get(), sur)) {
+                    SDL_FRect spos {
+                        .x = 0,
+                        .y = 0,
+                        .w = static_cast<float>(tex->w),
+                        .h = static_cast<float>(tex->h)
+                    };
+                    SDL_FRect dpos {
+                        .x = _x,
+                        .y = _y,
+                        .w = static_cast<float>(tex->w),
+                        .h = static_cast<float>(tex->h)
+                    };
+                    SDL_RenderTexture(renderer.load().get(), tex, &spos, &dpos);
+                    SDL_DestroyTexture(tex);
+                }
+                SDL_DestroySurface(sur);
+            }
             return;
         }
         case GUIlib::_l_nul:

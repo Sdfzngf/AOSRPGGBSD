@@ -4,7 +4,9 @@
  */
 module;
 
+#include <SDL3_ttf/SDL_ttf.h>
 #include <cstdint>
+#include <memory>
 
 export module Engine.Utils.Data.DataEntry.EntryType;
 
@@ -19,4 +21,5 @@ enum class EntryType : uint8_t {
     wav = 6,
     Font = 7
 };
+
 }

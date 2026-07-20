@@ -82,7 +82,8 @@ public:
     /// 主线程每帧调用，唤醒帧模式 Worker 并等待其完成渲染
     auto TickFrame(double dt) -> void
     {
-        if (!frame_mode_.load()) return;
+        if (!frame_mode_.load())
+            return;
         {
             std::lock_guard lock(frame_mtx_);
             frame_dt_ = dt;
@@ -402,11 +403,23 @@ private:
                                    gm_->PushCommand(cmd);
                                });
 
-        gui_table.set_function("text",
+        gui_table.set_function("debug_text",
                                [this](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) {
                                    if (!gm_)
                                        return;
                                    CmdText cmd { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) };
+                                   gm_->PushCommand(cmd);
+                               });
+        gui_table.set_function("text",
+                               [this](const std::string& te, const std::string& fname,
+                                      float _x, float _y,
+                                      uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
+                                      uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
+                                      float ptsize,
+                                      int quality, sol::optional<int> z_order) -> void {
+                                   if (!gm_)
+                                       return;
+                                   CmdText cmd { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = ptsize, .quality = quality, .z_order = z_order.value_or(0) };
                                    gm_->PushCommand(cmd);
                                });
 

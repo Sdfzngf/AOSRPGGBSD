@@ -63,6 +63,15 @@ struct DataEntry {
         Size.store(size);
         Data.store(std::make_shared<uint8_t[]>(size));
     }
+
+    template <typename T>
+    auto New() -> void
+    {
+        std::unique_lock lock(DataMutex);
+        Size.store(sizeof(T));
+        Data.store(std::reinterpret_pointer_cast<uint8_t[]>(std::make_shared<T>()));
+    }
+
     // 只读访问回调（共享锁）
     template <typename F>
     auto Read(F&& func) const

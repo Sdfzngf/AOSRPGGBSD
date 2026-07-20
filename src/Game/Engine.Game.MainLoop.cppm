@@ -19,7 +19,7 @@ auto Engine::Game::MainLoop() -> void
 {
     Log("void Engine::Game::MainLoop()");
     double prevTime = 0.0;
-    double deltaTime = 0.0;
+    double deltaTime = 0.1;
     double FPS = 0.0;
     float x = 0.0f, y = 0.0f;
     char xr = 1, yr = 1;
@@ -28,15 +28,13 @@ auto Engine::Game::MainLoop() -> void
         prevTime = Engine::Utils::Time::GetAppRunningTime();
 
         GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}", wW.load(), wH.load(), static_cast<int>(FPS)));
-
+        //
         GM.load().get()->SetBackgroundM(0, 0, 0, 255, -2147483648);
         GM.load().get()->FillRectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 100, 100, 100, 100, -2147483647);
         GM.load().get()->RectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 255, 0, 0, 0, 1);
         GM.load().get()->RectM(x, y, 92, 28, 0, 0, 0, 0, 5);
-        GM.load().get()->TextM("DVD", x, y, 255, 255, 255, 255, 4, 5);
-
-        GM.load().get()->FlushCommands();
-        SM.load().get()->TickFrameWorkers(deltaTime);
+        GM.load().get()->DebugTextM("DVD", x, y, 255, 255, 255, 255, 4, 5);
+        GM.load()->TextM("test", "__Engine_Font__@SourceHanSans", 0, 100, 255, 255, 255, 255, 255, 0, 0, 255, 20, 3, 999999);
 
         if (x < 0) {
             x = 0;
@@ -58,6 +56,9 @@ auto Engine::Game::MainLoop() -> void
         y += deltaTime * yr * 100;
 
         GM.load().get()->Update(Running);
+
+        GM.load().get()->FlushCommands();
+        SM.load().get()->TickFrameWorkers(deltaTime);
 
         deltaTime = Engine::Utils::Time::GetAppRunningTime() - prevTime;
         FPS = 1 / deltaTime;

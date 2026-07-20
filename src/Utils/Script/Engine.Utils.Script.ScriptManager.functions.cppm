@@ -94,30 +94,42 @@ auto ScriptManager::SetupGUILuaAPI() -> void
     auto gui_table = state.create_table();
 
     gui_table.set_function("set_background",
-                           [this](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                           [this](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
                                if (!SGM)
                                    return;
                                CmdSetBackground cmd { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) };
                                SGM->PushCommand(cmd);
                            });
     gui_table.set_function("rect",
-                           [this](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                           [this](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
                                if (!SGM)
                                    return;
                                CmdRect cmd { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) };
                                SGM->PushCommand(cmd);
                            });
 
-    gui_table.set_function("text",
-                           [this](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) {
+    gui_table.set_function("debug_text",
+                           [this](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) -> void {
                                if (!SGM)
                                    return;
-                               CmdText cmd { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) };
+                               CmdDebugText cmd { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) };
+                               SGM->PushCommand(cmd);
+                           });
+    gui_table.set_function("text",
+                           [this](const std::string& te, const std::string& fname,
+                                  float _x, float _y,
+                                  uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
+                                  uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
+                                  float ptsize,
+                                  int quality, sol::optional<int> z_order) -> void {
+                               if (!SGM)
+                                   return;
+                               CmdText cmd { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = ptsize, .quality = quality, .z_order = z_order.value_or(0) };
                                SGM->PushCommand(cmd);
                            });
 
     gui_table.set_function("set_title",
-                           [this](const std::string& title, sol::optional<int> z_order) {
+                           [this](const std::string& title, sol::optional<int> z_order) -> void {
                                if (!SGM)
                                    return;
                                CmdSetTitle cmd { .title = title, .z_order = z_order.value_or(0) };
@@ -125,13 +137,13 @@ auto ScriptManager::SetupGUILuaAPI() -> void
                            });
 
     gui_table.set_function("set_logical_size",
-                           [this](int w, int h, sol::optional<int> z_order) {
+                           [this](int w, int h, sol::optional<int> z_order) -> void {
                                if (!SGM)
                                    return;
                                CmdSetLogicalSize cmd { .w = w, .h = h, .z_order = z_order.value_or(0) };
                                SGM->PushCommand(cmd);
                            });
-    gui_table.set_function("disable_logical_size", [this]() {
+    gui_table.set_function("disable_logical_size", [this]() -> void {
         if (!SGM)
             return;
         CmdDisableLogicalSize cmd { };

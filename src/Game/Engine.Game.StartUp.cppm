@@ -29,9 +29,12 @@ auto Engine::Game::StartUp() -> void
 
     DM.store(std::make_shared<Engine::Utils::Data::DataManager>());
     SM.store(std::make_shared<Engine::Utils::Script::ScriptManager>());
-    SM.load().get()->BindDataManager(DM);
+    ;
     GM.store(std::make_shared<Engine::GUI::GUIManager>());
+
+    SM.load().get()->BindDataManager(DM);
     SM.load().get()->BindGUIManager(GM);
+    GM.load().get()->BindDM(DM.load());
 
     std::string myth = Engine::Basics::Random::rand_str(256);
     DM.load().get()->CreateSnapshotAll(myth);
@@ -78,6 +81,8 @@ auto Engine::Game::StartUp() -> void
     SM.load().get()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     GM.load().get()->FlushCommands();
+
+    DM.load().get()->MountDB("./Game/fonts.dat");
 
     Running = true;
 
