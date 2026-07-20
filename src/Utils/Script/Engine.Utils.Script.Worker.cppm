@@ -276,6 +276,12 @@ private:
                 std::string("[Worker ") + name_ + "]: unknown exception",
                 Engine::Utils::Logger::LogLevel::ERROR);
         }
+        // 确保主线程不因 Worker 退出而死锁
+        {
+            std::lock_guard lock(frame_sync_mtx_);
+            frame_ready_ = false;
+            frame_cv_.notify_one();
+        }
         running_.store(false);
         init_done_.store(true);
     }

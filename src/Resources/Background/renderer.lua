@@ -21,8 +21,11 @@ while true do
     bg),math.sin(elapsed)*200+320,math.cos(elapsed)*200+240,math.floor(red*255),math.floor(green*255),math.floor(blue*255),255,5,114514)
     gui.text("t11est", "__Engine_Font__@SourceHanSans", math.sin(elapsed)*200+320, math.cos(elapsed)*200+240, math.floor(red*255),math.floor(green*255),math.floor(blue*255), 255, math.floor((red+math.pi /2)*255),math.floor((green+math.pi /2)*255),math.floor((blue+math.pi /2)*255), 255, math.abs(math.floor(red*20)+1), 1, 999999)
     gui.text(b[math.random(1, #b)], "__Engine_Font__@SourceHanSans", math.sin(elapsed)*100+320, math.cos(elapsed)*100+240, math.floor(red*255),math.floor(green*255),math.floor(blue*255), 255, math.floor((red+math.pi /2)*255),math.floor((green+math.pi /2)*255),math.floor((blue+math.pi /2)*255), 255, 70, 0, 999999)
-    gui.text(dm.getlist()[1], "__Engine_Font__@SourceHanSans", 0, 0, 0,0,0, 255, 0,0,0, 255, 20, 0, 999999)
     gui.text(tostring(i), "__Engine_Font__@SourceHanSans", 0, 40, 0,0,0, 255, 0,0,0, 255, 20, 0, 999999)
+    vec=dm.getlist()
+    for i, v in pairs(vec) do
+        gui.text(v, "__Engine_Font__@SourceHanSans", 0, (i-1)*20, 0,0,0, 255, 0,0,0, 255, 20, 0, 999999)
+    end
     --sleep(1000)
     i=i+1
 end
