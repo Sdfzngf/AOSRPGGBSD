@@ -57,6 +57,21 @@ if(NOT TARGET SDL3::SDL3-static)
 endif()
 
 CPMAddPackage(
+        NAME SDL3_ttf
+        GITHUB_REPOSITORY libsdl-org/SDL_ttf
+        GIT_TAG release-3.2.2
+        OPTIONS
+                "CMAKE_EXPORT_COMPILE_COMMANDS OFF"
+                "BUILD_SHARED_LIBS OFF"
+                "SDLTTF_SAMPLES OFF"
+                "SDLTTF_INSTALL OFF"
+                "SDLTTF_VENDORED ON"
+)
+if(NOT TARGET SDL3_ttf::SDL3_ttf)
+        message(FATAL_ERROR "SDL3 static target SDL3::SDL3-static is unavailable")
+endif()
+
+CPMAddPackage(
         NAME replxx
         GITHUB_REPOSITORY AmokHuginnsson/replxx
         GIT_TAG release-0.0.4
@@ -181,7 +196,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static replxx lua sol2 nlohmann_json::nlohmann_json)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf replxx lua sol2 nlohmann_json::nlohmann_json)
 
 # ── 快照功能测试 ──
 # add_executable(test_snapshot
@@ -229,36 +244,36 @@ target_compile_features(test_snapshot PRIVATE cxx_std_26)
 target_link_libraries(test_snapshot PRIVATE SDL3::SDL3-static replxx lua)]]
 
 # ── Worker 功能测试 ──
-add_executable(test_worker
-        src/test_worker.cpp
-)
-
-target_sources(test_worker
-        PRIVATE
-                FILE_SET CXX_MODULES
-                FILES src/Basics/Engine.Basics.Memory.cppm
-                FILES src/Basics/Engine.Basics.Memory.MemoryStream.cppm
-                FILES src/Basics/Engine.Basics.TextUtils.cppm
-                FILES src/Basics/Engine.Basics.TextUtils.functions.cppm
-                FILES src/Utils/Engine.Utils.Time.cppm
-                FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
-                FILES src/Utils/Logger/Engine.Utils.Logger.cppm
-                FILES src/i18n/Engine.i18n.cppm
-                FILES src/i18n/Engine.i18n.functions.cppm
-                FILES src/Utils/Data/Engine.Utils.Data.DB.cppm
-                FILES src/Utils/Data/Engine.Utils.Data.DataEntry.EntryType.cppm
-                FILES src/Utils/Data/Engine.Utils.Data.DataEntry.cppm
-                FILES src/Utils/Data/Engine.Utils.Data.DataManager.functions.cppm
-                FILES src/Utils/Data/Engine.Utils.Data.DataManager.cppm
-                FILES src/Utils/Script/Engine.Utils.Script.Lua.cppm
-                FILES src/Utils/Script/Engine.Utils.Script.Worker.cppm
-                FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.functions.cppm
-                FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.cppm
-                FILES src/GUI/Engine.GUI.GUIManager.cppm
-)
-
-target_compile_features(test_worker PRIVATE cxx_std_26)
-target_link_libraries(test_worker PRIVATE lua sol2 nlohmann_json::nlohmann_json SDL3::SDL3-static)
+# add_executable(test_worker
+#         src/test_worker.cpp
+# )
+#
+# target_sources(test_worker
+#         PRIVATE
+#                 FILE_SET CXX_MODULES
+#                 FILES src/Basics/Engine.Basics.Memory.cppm
+#                 FILES src/Basics/Engine.Basics.Memory.MemoryStream.cppm
+#                 FILES src/Basics/Engine.Basics.TextUtils.cppm
+#                 FILES src/Basics/Engine.Basics.TextUtils.functions.cppm
+#                 FILES src/Utils/Engine.Utils.Time.cppm
+#                 FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
+#                 FILES src/Utils/Logger/Engine.Utils.Logger.cppm
+#                 FILES src/i18n/Engine.i18n.cppm
+#                 FILES src/i18n/Engine.i18n.functions.cppm
+#                 FILES src/Utils/Data/Engine.Utils.Data.DB.cppm
+#                 FILES src/Utils/Data/Engine.Utils.Data.DataEntry.EntryType.cppm
+#                 FILES src/Utils/Data/Engine.Utils.Data.DataEntry.cppm
+#                 FILES src/Utils/Data/Engine.Utils.Data.DataManager.functions.cppm
+#                 FILES src/Utils/Data/Engine.Utils.Data.DataManager.cppm
+#                 FILES src/Utils/Script/Engine.Utils.Script.Lua.cppm
+#                 FILES src/Utils/Script/Engine.Utils.Script.Worker.cppm
+#                 FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.functions.cppm
+#                 FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.cppm
+#                 FILES src/GUI/Engine.GUI.GUIManager.cppm
+# )
+#
+# target_compile_features(test_worker PRIVATE cxx_std_26)
+# target_link_libraries(test_worker PRIVATE lua sol2 nlohmann_json::nlohmann_json SDL3::SDL3-static)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
