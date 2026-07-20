@@ -282,6 +282,7 @@ private:
             frame_ready_ = false;
             frame_cv_.notify_one();
         }
+        frame_mode_.store(false);
         running_.store(false);
         init_done_.store(true);
     }
