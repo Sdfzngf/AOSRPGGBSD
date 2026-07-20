@@ -93,7 +93,7 @@ public:
 
         // 等待 Worker 完成帧渲染（阻塞主线程，确保命令已推入队列）
         std::unique_lock lock(frame_done_mtx_);
-        frame_done_cv_.wait(lock, [this] { return !frame_busy_.load(); });
+        frame_done_cv_.wait(lock, [this] -> bool { return !frame_busy_.load(); });
     }
 
     /// 通知帧模式 Worker 退出（Shutdown 时调用）
@@ -317,6 +317,10 @@ private:
                     Engine::Utils::Logger::LogLevel::ERROR);
                 return sol::lua_nil;
             }
+        });
+
+        dm_table.set_function("getlist", [this]() -> std::vector<std::string> {
+            return dm_.get()->GetList();
         });
 
         // ── dm:write(key, table) ──

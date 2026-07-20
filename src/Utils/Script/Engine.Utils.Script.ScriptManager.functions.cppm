@@ -8,6 +8,7 @@ module;
 #include <cstring>
 #include <memory>
 #include <nlohmann/json.hpp>
+#include <sol/inheritance.hpp>
 #include <sol/sol.hpp>
 #include <thread>
 
@@ -51,6 +52,9 @@ auto ScriptManager::SetupMainDMAPI() -> void
         } catch (...) {
             return sol::lua_nil;
         }
+    });
+    dm_table.set_function("getlist", [this]() -> std::vector<std::string> {
+        return SDM.get()->GetList();
     });
 
     dm_table.set_function("write", [this](const std::string& key, const sol::table& tbl) -> void {

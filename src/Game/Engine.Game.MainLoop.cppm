@@ -55,10 +55,10 @@ auto Engine::Game::MainLoop() -> void
         x += deltaTime * xr * 100;
         y += deltaTime * yr * 100;
 
-        GM.load().get()->Update(Running);
-
-        GM.load().get()->FlushCommands();
         SM.load().get()->TickFrameWorkers(deltaTime);
+        GM.load().get()->FlushCommands();
+
+        GM.load().get()->Update(Running);
 
         deltaTime = Engine::Utils::Time::GetAppRunningTime() - prevTime;
         FPS = 1 / deltaTime;

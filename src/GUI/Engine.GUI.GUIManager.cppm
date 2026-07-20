@@ -114,7 +114,7 @@ public:
     {
         Log("GUIManager::Init()");
         if (guilib == "SDL") {
-            SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
+            // SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
             if (!SDL_Init(SDL_INIT_VIDEO)) {
                 Log([&guilib]() -> std::string { return Engine::i18n::fmt("无法初始化{}: {}", "SDL3", SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
                 return 1;
@@ -204,10 +204,6 @@ public:
 
         // 多于 1 条命令时才排序
         if (cmd_queue_front_.size() > 1) {
-            // std::stable_sort(cmd_queue_front_.begin(), cmd_queue_front_.end(),
-            //                  [](const RenderCommand& a, const RenderCommand& b) -> bool {
-            //                      return get_z_order(a) < get_z_order(b);
-            //                  });
             std::ranges::stable_sort(cmd_queue_front_, std::ranges::less { }, &get_z_order);
         }
 
