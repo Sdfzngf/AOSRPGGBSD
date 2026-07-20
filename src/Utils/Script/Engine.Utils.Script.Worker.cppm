@@ -412,7 +412,7 @@ private:
                                [this](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) {
                                    if (!gm_)
                                        return;
-                                   CmdText cmd { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) };
+                                   CmdDebugText cmd { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) };
                                    gm_->PushCommand(cmd);
                                });
         gui_table.set_function("text",
