@@ -22,6 +22,7 @@ import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Logger;
 import Engine.GUI.GUIManager;
+import Engine.GUI.GUIManager.Cmd;
 
 export namespace Engine::Utils::Script {
 
@@ -190,7 +191,8 @@ public:
 
         // 先通知所有 Worker 退出（唤醒帧模式 Worker）
         for (auto& w : workers_copy) {
-            if (w) w->SignalExit();
+            if (w)
+                w->SignalExit();
         }
 
         // 给 Worker 3 秒优雅退出

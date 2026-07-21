@@ -25,6 +25,7 @@ import Engine.Utils.Data.DataManager;
 import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Logger;
 import Engine.GUI.GUIManager;
+import Engine.GUI.GUIManager.Cmd;
 
 using namespace ::Engine::GUI;
 using json = nlohmann::json;
@@ -420,11 +421,13 @@ private:
                                       float _x, float _y,
                                       uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
                                       uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
-                                      float ptsize,
-                                      int quality, sol::optional<int> z_order) -> void {
+                                      float _ptsize,
+                                      int _quality,
+                                      double _angle, float _acenter_x, float _acenter_y,
+                                      sol::optional<int> z_order) -> void {
                                    if (!gm_)
                                        return;
-                                   CmdText cmd { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = ptsize, .quality = quality, .z_order = z_order.value_or(0) };
+                                   CmdText cmd { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = z_order.value_or(0) };
                                    gm_->PushCommand(cmd);
                                });
 

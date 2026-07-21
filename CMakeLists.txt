@@ -173,6 +173,8 @@ target_sources(AOSRPGGBSD
                 FILES src/GUI/LDRM/Engine.GUI.LDRM.cppm
                 FILES src/GUI/OpenCL/Engine.GUI.OpenCL.cppm
                 FILES src/GUI/SDL/Engine.GUI.SDL.cppm
+                FILES src/GUI/Engine.GUI.GUIManager.Cmd.cppm
+                FILES src/GUI/Engine.GUI.GUIManager.functions.cppm
                 FILES src/GUI/Engine.GUI.GUIManager.cppm
 
                 FILES src/Utils/DevConsole/Engine.Utils.DevConsole.MainAct.cppm
