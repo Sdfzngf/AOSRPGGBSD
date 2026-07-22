@@ -53,13 +53,20 @@ struct CmdFillRect {
     uint8_t r, g, b, a;
     int z_order = 0;
 };
+struct CmdDrawSVG {
+    std::string resname;
+    float x, y;
+    int w, h;
+    float angle, acenter_x, acenter_y;
+    int z_order = 0;
+};
 
 using RenderCommand = std::variant<
     CmdSetBackground,
     CmdRect,
     CmdDebugText,
     CmdSetTitle,
-    CmdSetLogicalSize, CmdDisableLogicalSize, CmdFillRect, CmdText>;
+    CmdSetLogicalSize, CmdDisableLogicalSize, CmdFillRect, CmdText, CmdDrawSVG>;
 
 inline auto get_z_order(const RenderCommand& cmd) -> int
 {

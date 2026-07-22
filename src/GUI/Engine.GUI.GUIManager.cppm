@@ -105,6 +105,10 @@ public:
     {
         PushCommand(CmdText { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z });
     }
+    auto DrawSVGM(const std::string& _resname, float _x, float _y, int _w, int _h, float _angle, float _acenter_x, float _acenter_y, int _z)
+    {
+        PushCommand(CmdDrawSVG { .resname = _resname, .x = _x, .y = _y, .w = _w, .h = _h, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z });
+    }
 
     auto SetLogicalSize(int w, int h) -> void;
 
@@ -129,6 +133,8 @@ public:
               float ptsize,
               int quality,
               double angle, float acenter_x, float acenter_y) -> void;
+
+    auto DrawSVG(const std::string& _resname, float _x, float _y, int _w, int _h, float _angle, float _acenter_x, float _acenter_y) -> void;
 };
 
 }

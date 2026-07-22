@@ -134,14 +134,18 @@ auto ScriptManager::SetupGUILuaAPI() -> void
                                CmdText cmd { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = z_order.value_or(0) };
                                SGM->PushCommand(cmd);
                            });
-
-    gui_table.set_function("set_title",
-                           [this](const std::string& title, sol::optional<int> z_order) -> void {
-                               if (!SGM)
-                                   return;
-                               CmdSetTitle cmd { .title = title, .z_order = z_order.value_or(0) };
-                               SGM->PushCommand(cmd);
-                           });
+    gui_table.set_function("draw_svg", [this](const std::string& _resname, float _x, float _y, int _w, int _h, float _angle, float _acenter_x, float _acenter_y, sol::optional<int> _z) -> void {
+        if (!SGM)
+            return;
+        CmdDrawSVG cmd { .resname = _resname, .x = _x, .y = _y, .w = _w, .h = _h, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z.value_or(0) };
+        SGM->PushCommand(cmd);
+    });
+    gui_table.set_function("set_title", [this](const std::string& title, sol::optional<int> z_order) -> void {
+        if (!SGM)
+            return;
+        CmdSetTitle cmd { .title = title, .z_order = z_order.value_or(0) };
+        SGM->PushCommand(cmd);
+    });
 
     gui_table.set_function("set_logical_size",
                            [this](int w, int h, sol::optional<int> z_order) -> void {

@@ -63,12 +63,29 @@ CPMAddPackage(
         OPTIONS
                 "CMAKE_EXPORT_COMPILE_COMMANDS OFF"
                 "BUILD_SHARED_LIBS OFF"
-                "SDLTTF_SAMPLES OFF"
-                "SDLTTF_INSTALL OFF"
                 "SDLTTF_VENDORED ON"
+                "SDLTTF_HARFBUZZ ON"
+                "SDLTTF_PLUTOSVG ON"
+                "SDLTTF_SAMPLES OFF"
+                "SDLTTF_TESTS OFF"
 )
-if(NOT TARGET SDL3_ttf::SDL3_ttf)
-        message(FATAL_ERROR "SDL3 static target SDL3::SDL3-static is unavailable")
+if(NOT TARGET SDL3_ttf::SDL3_ttf-static)
+        message(FATAL_ERROR "SDL3_ttf static target SDL3::SDL3-static is unavailable")
+endif()
+
+CPMAddPackage(
+        NAME SDL3_image
+        GITHUB_REPOSITORY libsdl-org/SDL_image
+        GIT_TAG release-3.4.4
+        OPTIONS
+                "SDLIMAGE_BUILD_SHARED_LIBS OFF"
+                "SDLIMAGE_DEPS_SHARED OFF"
+                "SDLIMAGE_SVG ON"
+                "SDLIMAGE_SAMPLES OFF"
+                "SDLIMAGE_TESTS OFF"
+)
+if(NOT TARGET SDL3_image::SDL3_image-static)
+        message(FATAL_ERROR "SDL3_image static target SDL3::SDL3-static is unavailable")
 endif()
 
 CPMAddPackage(
@@ -90,6 +107,7 @@ CPMAddPackage(
     GIT_TAG v5.4.4
     OPTIONS
                 "CMAKE_EXPORT_COMPILE_COMMANDS OFF"
+                "BUILD_SHARED_LIBS OFF"
 )
 
 CPMAddPackage(
@@ -99,6 +117,7 @@ CPMAddPackage(
     OPTIONS
                 "CMAKE_EXPORT_COMPILE_COMMANDS OFF"
                 "SOL2_BUILD_LUA ON"
+                "BUILD_SHARED_LIBS OFF"
 )
 
 
@@ -109,6 +128,7 @@ CPMAddPackage(
     OPTIONS
                 "JSON_BuildTests OFF"
                 "JSON_Install OFF"
+                "BUILD_SHARED_LIBS OFF"
 )
 
 # Lua 5.5 移除了 lua.hpp，C++ 项目需自行提供 extern "C" 包装
@@ -199,7 +219,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf replxx lua sol2 nlohmann_json::nlohmann_json)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf-static SDL3_image::SDL3_image-static replxx lua sol2 nlohmann_json::nlohmann_json)
 
 # ── 快照功能测试 ──
 # add_executable(test_snapshot

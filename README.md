@@ -17,7 +17,7 @@ mkdir build
 cd build
 # 对于中国大陆的用户，由于Github连接不稳定甚至无法连接，可以多尝试几次运行这个命令
 # 或者使用 git config --global http.proxy http://<proxy-server>:<port>
-#         git config --global https.proxy http://<proxy-server>:<port> 
+#         git config --global https.proxy https://<proxy-server>:<port> 
 cmake -G "Ninja" ..
 ninja && ninja PackRes
 ```

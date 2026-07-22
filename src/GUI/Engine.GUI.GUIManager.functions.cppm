@@ -1,11 +1,16 @@
 module;
 
+#include "SDL3/SDL_iostream.h"
 #include "SDL3/SDL_rect.h"
+#include "SDL3/SDL_render.h"
+#include "SDL3/SDL_surface.h"
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
+#include <cstdio>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -19,6 +24,7 @@ import Engine.Utils.Logger;
 import Engine.Utils.Logger.LogLevel;
 import Engine.GUI.GUIManager;
 import Engine.GUI.GUIManager.Cmd;
+import Engine.Utils.Data.DataEntry.EntryType;
 
 using Engine::Utils::Logger::Log;
 
@@ -29,19 +35,19 @@ export namespace Engine::GUI {
     if (guilib == "SDL") {
         SDL_SetHint(SDL_HINT_RENDER_VSYNC, "1");
         if (!SDL_Init(SDL_INIT_VIDEO)) {
-            Log([&guilib]() -> std::string { return Engine::i18n::fmt("无法初始化{}: {}", "SDL3", SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
+            Log([&guilib]() -> std::string { return ::Engine::i18n::fmt("无法初始化{}: {}", "SDL3", SDL_GetError()); }, ::Engine::Utils::Logger::LogLevel::ERROR);
             return 1;
         }
         if (!TTF_Init()) {
-            Log([&guilib]() -> std::string { return Engine::i18n::fmt("无法初始化{}: {}", "SDL_TTF", SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
+            Log([&guilib]() -> std::string { return ::Engine::i18n::fmt("无法初始化{}: {}", "SDL_TTF", SDL_GetError()); }, ::Engine::Utils::Logger::LogLevel::ERROR);
             return 1;
         }
         glb = GUIlib::_l_SDL;
     } else {
-        Log([&guilib]() -> std::string { return Engine::i18n::fmt("不支持的图形库: {}", guilib); }, Engine::Utils::Logger::LogLevel::ERROR);
+        Log([&guilib]() -> std::string { return ::Engine::i18n::fmt("不支持的图形库: {}", guilib); }, ::Engine::Utils::Logger::LogLevel::ERROR);
         return 2;
     }
-    Log([&guilib]() -> std::string { return Engine::i18n::fmt("初始化图形库 {} 成功", guilib); });
+    Log([&guilib]() -> std::string { return ::Engine::i18n::fmt("初始化图形库 {} 成功", guilib); });
     init = true;
     return 0;
 }
@@ -52,7 +58,7 @@ auto GUIManager::BindWH(std::atomic<int>* ww, std::atomic<int>* wh) -> void
     wH = wh;
 }
 
-auto GUIManager::BindDM(std::shared_ptr<Engine::Utils::Data::DataManager> ddmm) -> void
+auto GUIManager::BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> ddmm) -> void
 {
     DM_ = ddmm;
 }
@@ -72,7 +78,7 @@ auto GUIManager::BindDM(std::shared_ptr<Engine::Utils::Data::DataManager> ddmm) 
 
         if (!SDL_CreateWindowAndRenderer(name.c_str(), wW->load(), wH->load(), SDL_WINDOW_RESIZABLE,
                                          &rawWindow, &rawRenderer)) {
-            Log([]() -> std::string { return Engine::i18n::fmt("SDL: 无法创建 window/renderer: {}", SDL_GetError()); }, Engine::Utils::Logger::LogLevel::ERROR);
+            Log([]() -> std::string { return ::Engine::i18n::fmt("SDL: 无法创建 window/renderer: {}", SDL_GetError()); }, ::Engine::Utils::Logger::LogLevel::ERROR);
             return 1;
         }
 
@@ -134,6 +140,8 @@ auto GUIManager::FlushCommands() -> void
                 FillRect(c.x, c.y, c.w, c.h, c.r, c.g, c.b, c.a);
             else if constexpr (std::is_same_v<T, CmdText>)
                 Text(c.s, c.font, c.x, c.y, c.r, c.g, c.b, c.a, c.br, c.bg, c.bb, c.ba, c.size, c.quality, c.angle, c.acenter_x, c.acenter_y);
+            else if constexpr (std::is_same_v<T, CmdDrawSVG>)
+                DrawSVG(c.resname, c.x, c.y, c.w, c.h, c.angle, c.acenter_x, c.acenter_y);
         },
                    cmd);
     }
@@ -284,6 +292,101 @@ auto GUIManager::DebugText(const std::string& s, const float& x, const float& y,
     }
 }
 
+auto GUIManager::DrawSVG(const std::string& _resname, float _x, float _y, int _w, int _h, float _angle, float _acenter_x, float _acenter_y) -> void
+{
+    switch (glb) {
+    case GUIlib::_l_SDL: {
+        struct _c_sdl_svg {
+            std::shared_ptr<::Engine::Utils::Data::DataEntry> _c_et;
+            std::shared_ptr<SDL_Texture> _c_c;
+            std::atomic<int> _c_w = 0, _c_h = 0;
+        };
+        auto rf = DM_.load()->GetEntry(_resname);
+        if (!rf || rf.get()->Type.load() != static_cast<uint8_t>(Engine::Utils::Data::EntryType::svg))
+            return;
+        const std::string cacheKey = _resname + "::ptr::SDLIMG_SVG_TEXTURE[C]<-NOSNAPSHOT";
+        auto sEntry = DM_.load()->GetEntry(cacheKey);
+        if (!sEntry) {
+            auto et = std::make_shared<::Engine::Utils::Data::DataEntry>();
+            et->New<_c_sdl_svg>();
+            et->Size = sizeof(_c_sdl_svg);
+            et->SetName(cacheKey);
+            et->Type.store(static_cast<uint8_t>(Engine::Utils::Data::EntryType::Binary));
+            bool success = et->Write([&rf, &_w, &_h, this](std::shared_ptr<uint8_t[]>& d) -> bool {
+                auto ptsvg = std::reinterpret_pointer_cast<_c_sdl_svg>(d);
+                ptsvg->_c_et = rf;
+                SDL_IOStream* sio = SDL_IOFromConstMem(ptsvg->_c_et->Data.load().get(),
+                                                       ptsvg->_c_et->Size.load());
+                if (!sio) {
+                    return false;
+                }
+                SDL_Surface* sur = IMG_LoadSizedSVG_IO(sio, _w, _h);
+                SDL_CloseIO(sio);
+                sio = nullptr;
+                if (!sur) {
+                    return false;
+                }
+                SDL_Texture* tx = SDL_CreateTextureFromSurface(renderer.load().get(), sur);
+                SDL_DestroySurface(sur);
+                if (!tx) {
+                    return false;
+                }
+                ptsvg->_c_c = std::shared_ptr<SDL_Texture>(tx, SDL_DestroyTexture);
+                ptsvg->_c_w = _w;
+                ptsvg->_c_h = _h;
+                return true;
+            });
+            if (!success)
+                return;
+            DM_.load()->InsertEntry(cacheKey, et);
+            sEntry = et;
+        }
+        auto tsvg = std::reinterpret_pointer_cast<_c_sdl_svg>(sEntry->Data.load());
+        if (tsvg->_c_w != _w || tsvg->_c_h != _h || !tsvg) {
+            SDL_IOStream* sio = SDL_IOFromConstMem(tsvg->_c_et->Data.load().get(),
+                                                   tsvg->_c_et->Size.load());
+            if (!sio) {
+                return;
+            }
+            SDL_Surface* sur = IMG_LoadSizedSVG_IO(sio, _w, _h);
+            SDL_CloseIO(sio);
+            sio = nullptr;
+            if (!sur) {
+                return;
+            }
+            SDL_Texture* tx = SDL_CreateTextureFromSurface(renderer.load().get(), sur);
+            SDL_DestroySurface(sur);
+            if (!tx) {
+                return;
+            }
+            tsvg->_c_c = std::shared_ptr<SDL_Texture>(tx, SDL_DestroyTexture);
+            tsvg->_c_w = _w;
+            tsvg->_c_h = _h;
+        }
+        SDL_FRect spos {
+            .x = 0,
+            .y = 0,
+            .w = static_cast<float>(tsvg->_c_c->w),
+            .h = static_cast<float>(tsvg->_c_c->h)
+        };
+        SDL_FRect dpos {
+            .x = _x,
+            .y = _y,
+            .w = static_cast<float>((_w == 0) ? tsvg->_c_c->w : _w),
+            .h = static_cast<float>((_h == 0) ? tsvg->_c_c->h : _h)
+        };
+        SDL_FPoint center {
+            .x = _acenter_x,
+            .y = _acenter_y
+        };
+        SDL_RenderTextureRotated(renderer.load().get(), tsvg->_c_c.get(), &spos, &dpos, _angle, &center, SDL_FLIP_NONE);
+        return;
+    }
+    case GUIlib::_l_nul:
+        return;
+    }
+}
+
 auto GUIManager::Text(const std::string& te, const std::string& fname,
                       float _x, float _y,
                       uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
@@ -294,38 +397,39 @@ auto GUIManager::Text(const std::string& te, const std::string& fname,
 {
     switch (glb) {
     case GUIlib::_l_SDL: {
-        struct font {
-            std::shared_ptr<Engine::Utils::Data::DataEntry> et;
+        struct _c_sdl_ttf_font {
+            std::shared_ptr<::Engine::Utils::Data::DataEntry> et;
             std::map<float, std::shared_ptr<TTF_Font>> _f;
-            bool _finit = false;
+            std::atomic<bool> _finit = false;
         };
 
         auto rf = DM_.load()->GetEntry(fname);
-        if (!rf)
+        if (!rf || rf.get()->Type.load() != static_cast<uint8_t>(Engine::Utils::Data::EntryType::Font))
             return;
 
-        const std::string cacheKey = fname + "::ptr::SDL_TTF<-NOSNAPSHOT";
+        const std::string cacheKey = fname + "::ptr::SDL_TTF_TEXTURE[C]<-NOSNAPSHOT";
         auto fEntry = DM_.load()->GetEntry(cacheKey);
 
         // 若缓存条目不存在，则创建
         if (!fEntry) {
-            auto et = std::make_shared<Engine::Utils::Data::DataEntry>();
-            et->New<font>();
+            auto et = std::make_shared<::Engine::Utils::Data::DataEntry>();
+            et->New<_c_sdl_ttf_font>();
+            et->Size = sizeof(_c_sdl_ttf_font);
+            et->SetName(cacheKey);
+            et->Type.store(static_cast<uint8_t>(Engine::Utils::Data::EntryType::Binary));
             bool success = et->Write([&rf, ptsize](std::shared_ptr<uint8_t[]>& d) -> bool {
-                auto fffff = std::reinterpret_pointer_cast<font>(d).get();
+                auto fffff = std::reinterpret_pointer_cast<_c_sdl_ttf_font>(d);
 
                 fffff->et = rf;
 
                 SDL_IOStream* sio = SDL_IOFromConstMem(fffff->et->Data.load().get(),
                                                        fffff->et->Size.load());
                 if (!sio) {
-                    // fffff->~font(); // 必须手动析构
                     return false;
                 }
                 TTF_Font* tfb = TTF_OpenFontIO(sio, true, ptsize);
                 if (!tfb) {
                     SDL_CloseIO(sio);
-                    // fffff->~font();
                     return false;
                 }
                 fffff->_f[ptsize] = std::shared_ptr<TTF_Font>(tfb, TTF_CloseFont);
@@ -338,7 +442,7 @@ auto GUIManager::Text(const std::string& te, const std::string& fname,
         }
 
         // 获取字体对象
-        auto fffff = reinterpret_cast<font*>(fEntry->Data.load().get());
+        auto fffff = std::reinterpret_pointer_cast<_c_sdl_ttf_font>(fEntry->Data.load());
 
         // 确保当前字号已缓存
         auto it = fffff->_f.find(ptsize);
@@ -350,7 +454,6 @@ auto GUIManager::Text(const std::string& te, const std::string& fname,
                 return;
             TTF_Font* tfb = TTF_OpenFontIO(sio, true, ptsize);
             if (!tfb) {
-                SDL_CloseIO(sio);
                 return;
             }
             auto newFont = std::shared_ptr<TTF_Font>(tfb, TTF_CloseFont);
