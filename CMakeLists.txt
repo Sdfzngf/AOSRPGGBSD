@@ -89,6 +89,17 @@ if(NOT TARGET SDL3_image::SDL3_image-static)
 endif()
 
 CPMAddPackage(
+        NAME SDL3_mixer
+        GITHUB_REPOSITORY libsdl-org/SDL_mixer
+        GIT_TAG release-3.2.4
+        OPTIONS
+                "BUILD_SHARED_LIBS OFF"
+)
+if(NOT TARGET SDL3_mixer::SDL3_mixer-static)
+        message(FATAL_ERROR "SDL3_mixer static target SDL3::SDL3-static is unavailable")
+endif()
+
+CPMAddPackage(
         NAME replxx
         GITHUB_REPOSITORY AmokHuginnsson/replxx
         GIT_TAG release-0.0.4
@@ -219,7 +230,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf-static SDL3_image::SDL3_image-static replxx lua sol2 nlohmann_json::nlohmann_json)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf-static SDL3_image::SDL3_image-static SDL3_mixer::SDL3_mixer-static replxx lua sol2 nlohmann_json::nlohmann_json)
 
 # ── 快照功能测试 ──
 # add_executable(test_snapshot
