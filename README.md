@@ -19,5 +19,5 @@ cd build
 # 或者使用 git config --global http.proxy http://<proxy-server>:<port>
 #         git config --global https.proxy https://<proxy-server>:<port> 
 cmake -G "Ninja" ..
-ninja && ninja PackRes
+ninja && ninja BGM && ninja PackRes
 ```
