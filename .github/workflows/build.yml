@@ -105,15 +105,29 @@ jobs:
       - name: Build
         run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --parallel $(nproc)
 
+      - name: Patch .mmpz SoundFont paths
+        run: |
+          python3 -c "
+          import zlib, os, glob
+          ws = '${{ github.workspace }}'
+          # 将 .mmpz 中的相对路径替换为绝对路径（LMMS CLI 渲染时不按 .mmpz 目录解析相对路径）
+          for mmpz in glob.glob(os.path.join(ws, 'src/Resources/BGM/*.mmpz')):
+              with open(mmpz, 'rb') as f:
+                  data = f.read()
+              xml = zlib.decompress(data[4:]).decode('utf-8')
+              xml = xml.replace('src=\"soundfonts/FluidR3_GM.sf2\"',
+                                'src=\"/usr/share/sounds/sf2/FluidR3_GM.sf2\"')
+              xml = xml.replace('src=\"soundfonts/小号.sf2\"',
+                                f'src=\"{ws}/src/Resources/BGM/小号.sf2\"')
+              new_data = data[:4] + zlib.compress(xml.encode('utf-8'))
+              with open(mmpz, 'wb') as f:
+                  f.write(new_data)
+          print('Patched .mmpz SoundFont paths')
+          "
+
       - name: Build BGM (export music via LMMS)
         timeout-minutes: 10
-        run: |
-          # .mmpz 中 SoundFont 为相对路径 soundfonts/xxx.sf2，
-          # LMMS 以 .mmpz 所在目录 (src/Resources/BGM/) 为基准解析
-          mkdir -p "${{ github.workspace }}/src/Resources/BGM/soundfonts"
-          ln -sf /usr/share/sounds/sf2/FluidR3_GM.sf2 "${{ github.workspace }}/src/Resources/BGM/soundfonts/"
-          ln -sf "${{ github.workspace }}/src/Resources/BGM/小号.sf2" "${{ github.workspace }}/src/Resources/BGM/soundfonts/"
-          cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target BGM
+        run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target BGM
 
       - name: Pack resources
         run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target PackRes
