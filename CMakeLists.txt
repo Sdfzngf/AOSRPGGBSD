@@ -224,6 +224,7 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Script/Engine.Utils.Script.Lua.cppm
                 FILES src/Utils/Script/Engine.Utils.Script.Worker.cppm
                 FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.functions.cppm
+                FILES src/Utils/Script/Engine.Utils.Script.FState.cppm
                 FILES src/Utils/Script/Engine.Utils.Script.ScriptManager.cppm
 
                 FILES src/Basics/Engine.Basics.Game.cppm
