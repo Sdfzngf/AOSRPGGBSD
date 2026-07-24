@@ -17,6 +17,8 @@ import Engine.Utils.Data.DataManager;
 import Engine.Utils.Data.DataEntry;
 import Engine.Basics.Random;
 import Engine.Utils.Script.ScriptManager;
+import Engine.GUI.GUIManager;
+import Engine.Sound.SoundManager;
 import Engine.i18n;
 
 using Engine::Utils::Logger::Log;
