@@ -66,6 +66,7 @@ jobs:
           cd "${{ github.workspace }}/lmms-appimage"
           wget -O lmms.AppImage "https://github.com/LMMS/lmms/releases/download/v1.3.0-alpha.1/lmms-1.3.0-alpha.1.102+g89fc6c9-linux-x86_64.AppImage"
           chmod +x lmms.AppImage
+          ln -sf lmms.AppImage lmms
           echo "${{ github.workspace }}/lmms-appimage" >> $GITHUB_PATH
 
       - name: Verify LMMS installation
