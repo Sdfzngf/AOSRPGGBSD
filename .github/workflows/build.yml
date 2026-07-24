@@ -28,6 +28,7 @@ jobs:
             cmake \
             ninja-build \
             clang \
+            ccache \
             libasound2-dev \
             libpulse-dev \
             libx11-dev \
