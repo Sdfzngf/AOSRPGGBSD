@@ -92,6 +92,7 @@ jobs:
         run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --parallel $(nproc)
 
       - name: Build BGM (export music via LMMS)
+        timeout-minutes: 10
         run: |
           # .mmpz 中 SoundFont 为相对路径 soundfonts/FluidR3_GM.sf2
           # LMMS 在构建工作目录 (build/) 下查找，需链接到此路径
