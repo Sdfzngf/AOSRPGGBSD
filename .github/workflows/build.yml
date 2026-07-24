@@ -60,13 +60,18 @@ jobs:
             libopusfile-dev \
             fluid-soundfont-gm
 
-      - name: Download LMMS alpha AppImage
+      - name: Download LMMS AppImage
         run: |
           mkdir -p "${{ github.workspace }}/lmms-appimage"
           cd "${{ github.workspace }}/lmms-appimage"
           wget -O lmms.AppImage "https://github.com/LMMS/lmms/releases/download/v1.3.0-alpha.1/lmms-1.3.0-alpha.1.102+g89fc6c9-linux-x86_64.AppImage"
           chmod +x lmms.AppImage
           echo "${{ github.workspace }}/lmms-appimage" >> $GITHUB_PATH
+
+      - name: Verify LMMS installation
+        run: |
+          which lmms || true
+          lmms --version || true
 
       - name: Restore ccache
         uses: actions/cache@v4
@@ -100,6 +105,9 @@ jobs:
 
       - name: Build BGM (export music via LMMS)
         timeout-minutes: 10
+        env:
+          # 显式设置 PATH，确保此步骤能找到 lmms AppImage
+          PATH: ${{ github.workspace }}/lmms-appimage:${{ env.PATH }}
         run: |
           # .mmpz 中 SoundFont 为相对路径 soundfonts/FluidR3_GM.sf2
           # LMMS 在构建工作目录 (build/) 下查找，需链接到此路径
