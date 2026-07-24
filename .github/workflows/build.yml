@@ -111,6 +111,7 @@ jobs:
           export PATH="${{ github.workspace }}/lmms-appimage:$PATH"
           mkdir -p "$BUILD_DIR/soundfonts"
           ln -sf /usr/share/sounds/sf2/FluidR3_GM.sf2 "$BUILD_DIR/soundfonts/"
+          ln -sf "${{ github.workspace }}/src/Resources/BGM/小号.sf2" "$BUILD_DIR/soundfonts/"
           cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target BGM
 
       - name: Pack resources
