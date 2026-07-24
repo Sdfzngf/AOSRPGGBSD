@@ -23,6 +23,7 @@ module Engine.Utils.Data.DataManager:functions;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Logger;
 import Engine.i18n;
+import Engine.Utils.Data.DataEntry;
 
 using Engine::i18n::locale;
 using Engine::Utils::Logger::Log;
