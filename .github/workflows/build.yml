@@ -92,7 +92,11 @@ jobs:
         run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --parallel $(nproc)
 
       - name: Build BGM (export music via LMMS)
-        run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target BGM
+        run: |
+          # LMMS 默认搜索路径不包含系统 SoundFont 目录，创建符号链接
+          mkdir -p ~/.lmms/soundfonts
+          ln -sf /usr/share/sounds/sf2/FluidR3_GM.sf2 ~/.lmms/soundfonts/
+          cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target BGM
 
       - name: Pack resources
         run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target PackRes
