@@ -70,7 +70,7 @@ jobs:
 
       - name: Verify LMMS installation
         run: |
-          which lmms || true
+          export PATH="${{ github.workspace }}/lmms-appimage:$PATH"
           lmms --version || true
 
       - name: Restore ccache
@@ -105,12 +105,8 @@ jobs:
 
       - name: Build BGM (export music via LMMS)
         timeout-minutes: 10
-        env:
-          # 显式设置 PATH，确保此步骤能找到 lmms AppImage
-          PATH: ${{ github.workspace }}/lmms-appimage:${{ env.PATH }}
         run: |
-          # .mmpz 中 SoundFont 为相对路径 soundfonts/FluidR3_GM.sf2
-          # LMMS 在构建工作目录 (build/) 下查找，需链接到此路径
+          export PATH="${{ github.workspace }}/lmms-appimage:$PATH"
           mkdir -p "$BUILD_DIR/soundfonts"
           ln -sf /usr/share/sounds/sf2/FluidR3_GM.sf2 "$BUILD_DIR/soundfonts/"
           cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target BGM
