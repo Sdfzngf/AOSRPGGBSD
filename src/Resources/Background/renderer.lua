@@ -30,4 +30,4 @@ while true do
     --sleep(1000)
     i=i+1
 end
-print("myGO")
+print("myGO\n")

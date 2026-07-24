@@ -6,6 +6,7 @@ module;
 #include "SDL3/SDL_surface.h"
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
+#include <SDL3_mixer/SDL_mixer.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include <algorithm>
 #include <atomic>
@@ -40,7 +41,11 @@ export namespace Engine::GUI {
         }
         if (!TTF_Init()) {
             Log([&guilib]() -> std::string { return ::Engine::i18n::fmt("无法初始化{}: {}", "SDL_TTF", SDL_GetError()); }, ::Engine::Utils::Logger::LogLevel::ERROR);
-            return 1;
+            return 3;
+        }
+        if (!MIX_Init()) {
+            Log([&guilib]() -> std::string { return ::Engine::i18n::fmt("无法初始化{}: {}", "SDL_Mixer", SDL_GetError()); }, ::Engine::Utils::Logger::LogLevel::ERROR);
+            return 4;
         }
         glb = GUIlib::_l_SDL;
     } else {
