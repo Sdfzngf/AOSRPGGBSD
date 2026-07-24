@@ -168,6 +168,7 @@ add_custom_target(PackRes
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/Background/background.rres ./bin/Game/background.dat Boki
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/Fonts/fonts.rres ./bin/Game/fonts.dat FFF
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/BGM/BGM.rres ./bin/Game/BGM.dat 350234
+        COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/SoundEffect/sfx.rres ./bin/Game/SFX.dat 1919810
         COMMAND ${CMAKE_COMMAND} -DOUTPUT_FILE=${CMAKE_BINARY_DIR}/bin/Lang/config.txt -DCONTENT=zh-CN -P ${CMAKE_CURRENT_SOURCE_DIR}/write_file.cmake
         USES_TERMINAL
         VERBATIM

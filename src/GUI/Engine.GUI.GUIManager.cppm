@@ -21,6 +21,7 @@ import Engine.i18n;
 import Engine.Utils.Data.DataManager;
 import Engine.Utils.Data.DataEntry;
 import Engine.GUI.GUIManager.Cmd;
+import Engine.Sound.SoundManager;
 
 using Engine::Utils::Logger::Log;
 
@@ -40,6 +41,7 @@ private:
     std::atomic<int>* wW; // NOLINT
     std::atomic<int>* wH; // NOLINT
     std::atomic<std::shared_ptr<Engine::Utils::Data::DataManager>> DM_;
+    std::atomic<std::shared_ptr<Engine::Sound::SoundManager>> MM_;
 
     // 双缓冲命令队列（线程安全，生产者写 back，消费者读 front）
     std::vector<RenderCommand> cmd_queue_front_;
@@ -52,6 +54,8 @@ public:
     auto BindWH(std::atomic<int>* ww, std::atomic<int>* wh) -> void;
 
     auto BindDM(std::shared_ptr<Engine::Utils::Data::DataManager> ddmm) -> void;
+
+    auto BindMM(std::shared_ptr<::Engine::Sound::SoundManager> mm) -> void;
 
     [[nodiscard]] auto CreateWindow(const std::string& name) -> int;
 

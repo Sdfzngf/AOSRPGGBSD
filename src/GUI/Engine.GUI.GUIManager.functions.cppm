@@ -26,6 +26,7 @@ import Engine.Utils.Logger.LogLevel;
 import Engine.GUI.GUIManager;
 import Engine.GUI.GUIManager.Cmd;
 import Engine.Utils.Data.DataEntry.EntryType;
+import Engine.Sound.SoundManager;
 
 using Engine::Utils::Logger::Log;
 
@@ -66,6 +67,11 @@ auto GUIManager::BindWH(std::atomic<int>* ww, std::atomic<int>* wh) -> void
 auto GUIManager::BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> ddmm) -> void
 {
     DM_ = ddmm;
+}
+
+auto GUIManager::BindMM(std::shared_ptr<::Engine::Sound::SoundManager> mm) -> void
+{
+    MM_ = mm;
 }
 
 [[nodiscard]] auto GUIManager::CreateWindow(const std::string& name) -> int
@@ -206,6 +212,9 @@ auto GUIManager::Update(std::atomic<bool>& running) -> void
                         wW->store(www);
                         wH->store(hhh);
                     }
+                break;
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                MM_.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
                 break;
             default:
                 break;

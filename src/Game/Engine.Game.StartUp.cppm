@@ -36,12 +36,11 @@ auto Engine::Game::StartUp() -> void
     SM.load()->BindGUIManager(GM);
     GM.load()->BindDM(DM.load());
     MM.load()->BindDM(DM.load());
+    GM.load()->BindMM(MM.load());
 
     std::string myth = Engine::Basics::Random::rand_str(256);
     DM.load()->CreateSnapshotAll(myth);
-    DM.load()->MountDB("./Game/startup.dat");
     DM.load()->MountDB("./Lang/Lang.dat");
-    DM.load()->MountDB("./Game/BGM.dat");
 
     std::fstream file("./Lang/config.txt");
     std::string lang = "zh-CN";
@@ -65,6 +64,10 @@ auto Engine::Game::StartUp() -> void
     SM.load()->SetupGUILuaAPI();
 
     DM.load()->MountDB("./Test/worker.dat");
+    DM.load()->MountDB("./Game/BGM.dat");
+    DM.load()->MountDB("./Game/SFX.dat");
+    DM.load()->MountDB("./Game/startup.dat");
+    DM.load()->MountDB("./Game/fonts.dat");
     // SM.load().get()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
 
     if (GM.load()->Init("SDL") != 0)
@@ -86,7 +89,7 @@ auto Engine::Game::StartUp() -> void
     //     }
     // }
     int resu = MM.load()->PlaySoundEffect("__Engine_BGM__@ITERATION.wav");
-
+    int resu2 = MM.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
     wW = 640;
     wH = 480;
 
@@ -100,8 +103,6 @@ auto Engine::Game::StartUp() -> void
     SM.load()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     GM.load()->FlushCommands();
-
-    DM.load()->MountDB("./Game/fonts.dat");
 
     Running = true;
 

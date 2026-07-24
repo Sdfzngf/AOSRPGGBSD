@@ -25,15 +25,14 @@ private:
     std::mutex mtx_;
     std::atomic<int> effectCounter { 0 };
 
-    [[nodiscard]] auto LoadWAVInternal(const std::string& resname, const std::string& label) -> int
+    [[nodiscard]] auto LoadSoundInternal(const std::string& resname, const std::string& label) -> int
     {
         auto et = DM_.get()->GetEntry(resname);
-        if (et->Type.load() != static_cast<uint8_t>(Engine::Utils::Data::EntryType::wav)) {
+        if (et->Type.load() != static_cast<uint8_t>(Engine::Utils::Data::EntryType::Sound)) {
             return 1;
         }
         int succ = et->Read([&label, this, &et](const std::shared_ptr<uint8_t[]>& data) -> int {
             if (!data || !mixer) {
-                printf("02");
                 return 2;
             }
             SDL_IOStream* sio = SDL_IOFromConstMem(data.get(), et->GetSize());
@@ -98,10 +97,10 @@ public:
     }
 
     // ---------- 线程安全的公共接口 ----------
-    [[nodiscard]] auto LoadWAV(const std::string& resname, const std::string& label) -> int
+    [[nodiscard]] auto LoadSound(const std::string& resname, const std::string& label) -> int
     {
         std::lock_guard<std::mutex> lock(mtx_);
-        return LoadWAVInternal(resname, label);
+        return LoadSoundInternal(resname, label);
     }
 
     [[nodiscard]] auto CreateTrack(const std::string& label) -> int
@@ -127,7 +126,7 @@ public:
         std::lock_guard<std::mutex> lock(mtx_);
 
         if (audios.find(resname) == audios.end()) {
-            int ret = LoadWAVInternal(resname, resname);
+            int ret = LoadSoundInternal(resname, resname);
             if (ret != 0)
                 return ret;
         }
