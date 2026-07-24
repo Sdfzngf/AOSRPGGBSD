@@ -58,6 +58,7 @@ jobs:
             libflac-dev \
             libmpg123-dev \
             libopusfile-dev \
+            libfuse2 \
             fluid-soundfont-gm
 
       - name: Download LMMS AppImage
