@@ -5,6 +5,9 @@
 module;
 
 #include <cmath>
+#include <string>
+#include <vector>
+
 module Engine.Game:MainLoop;
 
 import Engine.Game;
@@ -35,6 +38,12 @@ auto Engine::Game::MainLoop() -> void
         GM.load().get()->RectM(x, y, 92, 28, 0, 0, 0, 0, 5);
         GM.load().get()->DebugTextM("DVD", x, y, 255, 255, 255, 255, 4, 5);
         GM.load()->TextM("test", "__Engine_Font__@SourceHanSans", 0, 100, 255, 255, 255, 255, 255, 0, 0, 255, 20, 3, 0, 0, 0, 999999);
+        std::vector<std::string> list = MM.load()->GetTrackList();
+        int c = 0;
+        for (auto& i : list) {
+            GM.load()->TextM(i, "__Engine_Font__@SourceHanSans", 0, c * 30, 255, 255, 255, 255, 255, 0, 0, 255, 20, 3, 0, 0, 0, 999999);
+            c++;
+        }
         // GM.load()->DrawSVGM("__Engine_StartUp__@note.svg", 0, 0, 500, 0, 0, 0, 0, 1919810);
 
         if (x < 0) {

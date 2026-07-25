@@ -219,6 +219,9 @@ auto GUIManager::Update(std::atomic<bool>& running) -> void
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 MM_.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
                 break;
+            case SDL_EVENT_MOUSE_WHEEL:
+                MM_.load()->StopTrackPlaying("SFX@__Engine_SFX__@end.mp3", 100);
+                break;
             default:
                 break;
             }

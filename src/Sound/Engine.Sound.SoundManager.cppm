@@ -8,6 +8,7 @@ module;
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 export module Engine.Sound.SoundManager;
 
@@ -25,7 +26,7 @@ private:
     std::mutex mtx_;
     std::atomic<int> effectCounter { 0 };
 
-    [[nodiscard]] auto LoadSoundInternal(const std::string& resname, const std::string& label) -> int
+    [[nodiscard]] constexpr auto LoadSoundInternal(const std::string& resname, const std::string& label) -> int
     {
         auto et = DM_.get()->GetEntry(resname);
         if (et->Type.load() != static_cast<uint8_t>(Engine::Utils::Data::EntryType::Sound)) {
@@ -49,7 +50,7 @@ private:
         return succ;
     }
 
-    [[nodiscard]] auto CreateTrackInternal(const std::string& label) -> int
+    [[nodiscard]] constexpr auto CreateTrackInternal(const std::string& label) -> int
     {
         MIX_Track* tra = MIX_CreateTrack(mixer.get());
         if (!tra) {
@@ -59,7 +60,7 @@ private:
         return 0;
     }
 
-    [[nodiscard]] auto SetTrackAudioInternal(const std::string& tl, const std::string& al) -> int
+    [[nodiscard]] constexpr auto SetTrackAudioInternal(const std::string& tl, const std::string& al) -> int
     {
         auto tl_it = tracks.find(tl);
         auto al_it = audios.find(al);
@@ -70,13 +71,34 @@ private:
         return 0;
     }
 
-    [[nodiscard]] auto PlayTrackInternal(const std::string& label) -> int
+    [[nodiscard]] constexpr auto PlayTrackInternal(const std::string& label) -> int
     {
         auto it = tracks.find(label);
         if (it == tracks.end()) {
             return 1;
         }
         MIX_PlayTrack(it->second.get(), 0);
+        return 0;
+    }
+
+    [[nodiscard]] constexpr auto PlayLoopTrackInternal(const std::string& label, int _c) -> int
+    {
+        auto it = tracks.find(label);
+        if (it == tracks.end()) {
+            return 1;
+        }
+        MIX_PlayTrack(it->second.get(), 0);
+        MIX_SetTrackLoops(it->second.get(), _c);
+        return 0;
+    }
+
+    [[nodiscard]] constexpr auto StopTrackPlayingInternal(const std::string& label, int64_t fade) -> int
+    {
+        auto it = tracks.find(label);
+        if (it == tracks.end()) {
+            return 1;
+        }
+        MIX_StopTrack(it->second.get(), fade);
         return 0;
     }
 
@@ -121,6 +143,15 @@ public:
         return SetTrackAudioInternal(tl, al);
     }
 
+    auto EraseTrack(const std::string& trackname) -> int
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        if (tracks.find(trackname) != tracks.end()) {
+            tracks.erase(trackname);
+        }
+        return 1;
+    }
+
     [[nodiscard]] auto PlaySoundEffect(const std::string& resname) -> int
     {
         std::lock_guard<std::mutex> lock(mtx_);
@@ -131,7 +162,7 @@ public:
                 return ret;
         }
 
-        std::string trackLabel = "effect_" + std::to_string(effectCounter++);
+        std::string trackLabel = "SFX@" + resname + "::C-" + std::to_string(effectCounter++);
         int ret = CreateTrackInternal(trackLabel);
         if (ret != 0)
             return ret;
@@ -139,8 +170,54 @@ public:
         ret = SetTrackAudioInternal(trackLabel, resname);
         if (ret != 0)
             return ret;
+        struct CallBackkData {
+            SoundManager* mgr;
+            std::string label;
+        };
+        auto* cbData = new CallBackkData { .mgr = this, .label = trackLabel }; // NOLINT
+        if (!MIX_SetTrackStoppedCallback(tracks[trackLabel].get(), [](void* userdata, MIX_Track* track) -> void {
+                if (!userdata) {
+                    return;
+                }
+                auto cb = reinterpret_cast<CallBackkData*>(userdata);
+                if (!cb->mgr) {
+                    delete cb; // NOLINT
+                    return;
+                }
+                cb->mgr->EraseTrack(cb->label);
+                delete cb; // NOLINT
+            },
+                                         cbData)) {
+            delete cbData; // NOLINT
+            return 99;
+        }
 
         return PlayTrackInternal(trackLabel);
+    }
+
+    [[nodiscard]] auto GetTrackList() -> std::vector<std::string>
+    {
+        std::vector<std::string> vec { };
+        std::lock_guard<std::mutex> lock(mtx_);
+        vec.resize(tracks.size());
+        int c = 0;
+        for (auto& i : tracks) {
+            vec.at(c) = i.first;
+            c++;
+        }
+        return vec;
+    }
+
+    [[nodiscard]] auto PlayLoopTrack(const std::string& label, int _c) -> int
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return PlayLoopTrackInternal(label, _c);
+    }
+
+    [[nodiscard]] auto StopTrackPlaying(const std::string& label, int64_t fade) -> int
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        return StopTrackPlayingInternal(label, fade);
     }
 };
 

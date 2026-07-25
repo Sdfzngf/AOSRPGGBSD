@@ -76,21 +76,16 @@ auto Engine::Game::StartUp() -> void
         return;
 
     MM.load()->Init();
-    // int result = MM.load()->LoadWAV("__Engine_BGM__@ITERATION.wav", "testWav");
-    // printf("0\n");
-    // if (result == 0) {
-    //     printf("1\n");
-    //     int re2 = MM.load()->CreateTrack("TestTrack");
-    //     if (re2 == 0) {
-    //         printf("2\n");
-    //         int re3 = MM.load()->SetTrackAudio("TestTrack", "testWav");
-    //         if (re3 == 0) {
-    //             printf("3\n");
-    //             int re4 = MM.load()->PlayTrack("TestTrack");
-    //         }
-    //     }
-    // }
-    int resu = MM.load()->PlaySoundEffect("__Engine_BGM__@ITERATION.wav");
+    int result = MM.load()->LoadSound("__Engine_BGM__@ITERATION.wav", "testWav");
+    if (result == 0) {
+        int re2 = MM.load()->CreateTrack("TestTrack");
+        if (re2 == 0) {
+            int re3 = MM.load()->SetTrackAudio("TestTrack", "testWav");
+            if (re3 == 0) {
+                int re4 = MM.load()->PlayLoopTrack("TestTrack", -1);
+            }
+        }
+    }
     int resu2 = MM.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
     wW = 640;
     wH = 480;
