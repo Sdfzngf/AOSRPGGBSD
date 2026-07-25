@@ -26,7 +26,7 @@ private:
     std::mutex mtx_;
     std::atomic<int> effectCounter { 0 };
 
-    [[nodiscard]] constexpr auto LoadSoundInternal(const std::string& resname, const std::string& label) -> int
+    [[nodiscard]] auto LoadSoundInternal(const std::string& resname, const std::string& label) -> int
     {
         auto et = DM_.get()->GetEntry(resname);
         if (et->Type.load() != static_cast<uint8_t>(Engine::Utils::Data::EntryType::Sound)) {
@@ -50,7 +50,7 @@ private:
         return succ;
     }
 
-    [[nodiscard]] constexpr auto CreateTrackInternal(const std::string& label) -> int
+    [[nodiscard]] auto CreateTrackInternal(const std::string& label) -> int
     {
         MIX_Track* tra = MIX_CreateTrack(mixer.get());
         if (!tra) {
@@ -60,7 +60,7 @@ private:
         return 0;
     }
 
-    [[nodiscard]] constexpr auto SetTrackAudioInternal(const std::string& tl, const std::string& al) -> int
+    [[nodiscard]] auto SetTrackAudioInternal(const std::string& tl, const std::string& al) -> int
     {
         auto tl_it = tracks.find(tl);
         auto al_it = audios.find(al);
@@ -71,7 +71,7 @@ private:
         return 0;
     }
 
-    [[nodiscard]] constexpr auto PlayTrackInternal(const std::string& label) -> int
+    [[nodiscard]] auto PlayTrackInternal(const std::string& label) -> int
     {
         auto it = tracks.find(label);
         if (it == tracks.end()) {
@@ -81,7 +81,7 @@ private:
         return 0;
     }
 
-    [[nodiscard]] constexpr auto PlayLoopTrackInternal(const std::string& label, int _c) -> int
+    [[nodiscard]] auto PlayLoopTrackInternal(const std::string& label, int _c) -> int
     {
         auto it = tracks.find(label);
         if (it == tracks.end()) {
@@ -92,7 +92,7 @@ private:
         return 0;
     }
 
-    [[nodiscard]] constexpr auto StopTrackPlayingInternal(const std::string& label, int64_t fade) -> int
+    [[nodiscard]] auto StopTrackPlayingInternal(const std::string& label, int64_t fade) -> int
     {
         auto it = tracks.find(label);
         if (it == tracks.end()) {
