@@ -75,9 +75,11 @@ auto Engine::Game::StartUp() -> void
     // SM.load().get()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
 
     if (GM.load()->Init("SDL") != 0)
-        return;
+        exit(1);
 
-    MM.load()->Init();
+    if (MM.load()->Init() != 0) {
+        exit(2);
+    }
     int result = MM.load()->LoadSound("__Engine_BGM__@ITERATION.wav", "testWav");
     if (result == 0) {
         int re2 = MM.load()->CreateTrack("TestTrack");
