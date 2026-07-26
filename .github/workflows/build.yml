@@ -59,7 +59,9 @@ jobs:
             libmpg123-dev \
             libopusfile-dev \
             libfuse2 \
-            fluid-soundfont-gm
+            fluid-soundfont-gm \
+            opencl-headers \
+            ocl-icd-opencl-dev
 
       - name: Download LMMS AppImage
         run: |
