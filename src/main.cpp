@@ -39,6 +39,8 @@ auto main(int argc, char* argv[]) -> int
             Engine::Utils::Logger::Log(i, Engine::Utils::Logger::LogLevel::DEBUG);
         }
         Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
+    } catch (...) {
+        Engine::Utils::Logger::Log("Couldn't get OpenCL_Info", Engine::Utils::Logger::LogLevel::DEBUG);
     }
 
     if (mp._dev_console) {
