@@ -132,8 +132,16 @@ jobs:
         timeout-minutes: 10
         run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target BGM
 
+      - name: Debug dependencies
+        run: |
+          ldd build/bin/AOSRPGGBSD
+          ls -l /usr/lib/x86_64-linux-gnu/libOpenCL.so*
+          find /usr -name "libOpenCL.so*" 2>/dev/null
+
       - name: Pack resources
-        run: cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target PackRes
+        run: |
+          export LD_DEBUG=libs
+          cmake --build "$BUILD_DIR" --config "$BUILD_TYPE" --target PackRes
 
       - name: Package artifacts
         run: |
