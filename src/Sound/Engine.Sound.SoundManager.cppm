@@ -4,6 +4,7 @@ module;
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 #include <atomic> // 新增
+#include <cstdio>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -29,6 +30,9 @@ private:
     [[nodiscard]] auto LoadSoundInternal(const std::string& resname, const std::string& label) -> int
     {
         auto et = DM_.get()->GetEntry(resname);
+        if (!et) {
+            return 1918;
+        }
         if (et->Type.load() != static_cast<uint8_t>(Engine::Utils::Data::EntryType::Sound)) {
             return 1;
         }
@@ -115,7 +119,7 @@ public:
 
     auto BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> dm) -> void
     {
-        DM_ = dm;
+        DM_ = dm; // NOLINT
     }
 
     // ---------- 线程安全的公共接口 ----------
@@ -148,6 +152,7 @@ public:
         std::lock_guard<std::mutex> lock(mtx_);
         if (tracks.find(trackname) != tracks.end()) {
             tracks.erase(trackname);
+            return 0;
         }
         return 1;
     }

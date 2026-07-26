@@ -48,4 +48,10 @@ auto ScriptManager::SetupGUILuaAPI() -> void
     SetupGUIAPI(state, SGM);
 }
 
+auto ScriptManager::SetupSndLuaAPI() -> void
+{
+    auto& state = L.get_state();
+    SetUpSndAPI(state, MaMa);
+}
+
 }; // namespace Engine::Utils::Script

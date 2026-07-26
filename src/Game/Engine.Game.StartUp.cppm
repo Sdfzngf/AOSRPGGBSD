@@ -38,6 +38,7 @@ auto Engine::Game::StartUp() -> void
     SM.load()->BindGUIManager(GM);
     GM.load()->BindDM(DM.load());
     MM.load()->BindDM(DM.load());
+    SM.load()->BindSndManager(MM);
     GM.load()->BindMM(MM.load());
 
     std::string myth = Engine::Basics::Random::rand_str(256);
@@ -63,6 +64,7 @@ auto Engine::Game::StartUp() -> void
 
     SM.load()->OpenLibs();
     SM.load()->SetupMainDMAPI();
+    SM.load()->SetupSndLuaAPI();
     SM.load()->SetupGUILuaAPI();
 
     DM.load()->MountDB("./Test/worker.dat");

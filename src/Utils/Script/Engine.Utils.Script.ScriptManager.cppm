@@ -23,6 +23,7 @@ import Engine.Utils.Data.DataManager;
 import Engine.Utils.Logger;
 import Engine.GUI.GUIManager;
 import Engine.GUI.GUIManager.Cmd;
+import Engine.Sound.SoundManager;
 
 export namespace Engine::Utils::Script {
 
@@ -33,6 +34,7 @@ private:
     mutable std::mutex workers_mtx;
     std::shared_ptr<::Engine::Utils::Data::DataManager> SDM;
     std::shared_ptr<::Engine::GUI::GUIManager> SGM;
+    std::shared_ptr<::Engine::Sound::SoundManager> MaMa;
 
 public:
     auto BindDataManager(std::shared_ptr<::Engine::Utils::Data::DataManager>& dm) -> void
@@ -48,9 +50,15 @@ public:
     {
         SGM = gm;
     }
+
     auto BindGUIManager(const std::atomic<std::shared_ptr<::Engine::GUI::GUIManager>>& gm) -> void
     {
         SGM = gm;
+    }
+
+    auto BindSndManager(const std::atomic<std::shared_ptr<::Engine::Sound::SoundManager>>& mama) -> void
+    {
+        MaMa = mama;
     }
 
     constexpr auto RunScript(const std::shared_ptr<::Engine::Utils::Data::DataEntry>& DE) -> void
@@ -85,6 +93,8 @@ public:
     /// 主线程 Lua 环境注入 gui API（实现见 functions 分区）
     auto SetupGUILuaAPI() -> void;
 
+    auto SetupSndLuaAPI() -> void;
+
     /// 主线程 fire-and-forget 创建 Worker，返回是否成功
     auto CreateWorker(const std::string& name, const std::string& entry_key) -> bool
     {
@@ -107,6 +117,7 @@ public:
                 name,
                 SDM,
                 SGM,
+                MaMa,
                 entry_key,
                 [this](const std::string& child_name, const std::string& child_entry_key) -> std::shared_ptr<Worker> {
                     // Worker 内 spawn 的回调
@@ -119,6 +130,7 @@ public:
                             child_name,
                             SDM,
                             SGM,
+                            MaMa,
                             child_entry_key,
                             [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
                                 return WorkerSpawn(gname, gkey);
@@ -232,6 +244,7 @@ private:
                 name,
                 SDM,
                 SGM,
+                MaMa,
                 entry_key,
                 [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
                     return WorkerSpawn(gname, gkey);

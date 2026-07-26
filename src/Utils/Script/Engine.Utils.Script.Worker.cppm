@@ -27,6 +27,7 @@ import Engine.Utils.Data.DataEntry;
 import Engine.Utils.Logger;
 import Engine.GUI.GUIManager;
 import Engine.GUI.GUIManager.Cmd;
+import Engine.Sound.SoundManager;
 
 using namespace ::Engine::GUI;
 using json = nlohmann::json;
@@ -41,11 +42,13 @@ public:
     Worker(std::string name,
            std::shared_ptr<::Engine::Utils::Data::DataManager> dm,
            std::shared_ptr<::Engine::GUI::GUIManager> gm,
+           std::shared_ptr<::Engine::Sound::SoundManager> mama,
            const std::string& entry_key,
            SpawnCallback spawn_cb)
         : name_(std::move(name))
         , dm_(std::move(dm))
         , gm_(std::move(gm))
+        , mama_(std::move(mama))
         , spawn_callback_(std::move(spawn_cb))
     {
         running_.store(true);
@@ -174,7 +177,7 @@ private:
             while (running_.load() && !should_exit_.load()) {
                 {
                     std::unique_lock lock(frame_sync_mtx_);
-                    frame_cv_.wait(lock, [this] { return frame_ready_ || should_exit_.load(); });
+                    frame_cv_.wait(lock, [this] -> bool { return frame_ready_ || should_exit_.load(); });
                     if (should_exit_.load())
                         break;
                 }
@@ -230,10 +233,11 @@ private:
         // ── Worker 专用 dm API ──
         dm_table.set_function("spawn_worker", [this, &lua](const std::string& worker_name, const std::string& entry_key) -> sol::object {
             auto worker = spawn_callback_(worker_name, entry_key);
-            if (!worker) return sol::lua_nil;
+            if (!worker)
+                return sol::lua_nil;
             auto handle = lua.get_state().create_table();
             auto w_ptr = std::make_shared<std::shared_ptr<Worker>>(std::move(worker));
-            handle["join"] = [w_ptr]() { (*w_ptr)->Join(); };
+            handle["join"] = [w_ptr]() -> void { (*w_ptr)->Join(); };
             handle["is_running"] = [w_ptr]() -> bool { return (*w_ptr)->IsRunning(); };
             handle["name"] = [w_ptr]() -> std::string { return (*w_ptr)->GetName(); };
             return handle;
@@ -244,6 +248,7 @@ private:
 
         // ── 公共 gui API ──
         SetupGUIAPI(state, gm_);
+        SetUpSndAPI(state, mama_);
 
         // ── sleep_frame ──
         lua_State* L = state.lua_state();
@@ -257,6 +262,7 @@ private:
     std::string name_;
     std::shared_ptr<::Engine::Utils::Data::DataManager> dm_;
     std::shared_ptr<::Engine::GUI::GUIManager> gm_;
+    std::shared_ptr<::Engine::Sound::SoundManager> mama_;
     SpawnCallback spawn_callback_;
     std::atomic<bool> running_ { false };
     std::atomic<bool> should_exit_ { false };

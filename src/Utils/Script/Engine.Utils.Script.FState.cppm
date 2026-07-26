@@ -6,6 +6,7 @@
  */
 module;
 
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <nlohmann/json.hpp>
@@ -18,13 +19,14 @@ import Engine.Utils.Data.DataManager;
 import Engine.Utils.Logger;
 import Engine.GUI.GUIManager;
 import Engine.GUI.GUIManager.Cmd;
+import Engine.Sound.SoundManager;
 
 using namespace ::Engine::GUI;
 using json = nlohmann::json;
 
 export namespace Engine::Utils::Script {
 /// 将 nlohmann::json 转为 sol Lua 值
-inline sol::object JsonToSol(const json& j, sol::state& state)
+inline auto JsonToSol(const json& j, sol::state& state) -> sol::object
 {
     switch (j.type()) {
     case json::value_t::null:
@@ -57,7 +59,7 @@ inline sol::object JsonToSol(const json& j, sol::state& state)
 }
 
 /// 将 sol::table 递归转换为 nlohmann::json
-inline json SolTableToJson(const sol::table& tbl)
+inline auto SolTableToJson(const sol::table& tbl) -> json
 {
     bool is_array = true;
     for (auto& kv : tbl) {
@@ -122,17 +124,17 @@ inline json SolTableToJson(const sol::table& tbl)
 }
 
 /// 注入 dm:read / dm:write / dm:list_keys 等公共方法
-inline void SetupDMBaseAPI(sol::table& dm_table,
+inline auto SetupDMBaseAPI(sol::table& dm_table,
                            const std::shared_ptr<::Engine::Utils::Data::DataManager>& dm,
                            sol::state& lua_state,
-                           const std::string& log_tag = "Main")
+                           const std::string& log_tag = "Main") -> void
 {
     dm_table.set_function("read", [dm, &lua_state, log_tag](const std::string& key) -> sol::object {
         auto entry = dm->GetEntry(key);
         if (!entry)
             return sol::lua_nil;
         std::string json_str;
-        entry->Read([&](const std::shared_ptr<uint8_t[]>& data) {
+        entry->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
             json_str.assign(reinterpret_cast<const char*>(data.get()), entry->GetSize());
         });
         if (json_str.empty())
@@ -147,7 +149,7 @@ inline void SetupDMBaseAPI(sol::table& dm_table,
         }
     });
 
-    dm_table.set_function("write", [dm, log_tag](const std::string& key, const sol::table& tbl) {
+    dm_table.set_function("write", [dm, log_tag](const std::string& key, const sol::table& tbl) -> void {
         try {
             json j = SolTableToJson(tbl);
             std::string json_str = j.dump();
@@ -160,7 +162,7 @@ inline void SetupDMBaseAPI(sol::table& dm_table,
                 auto new_entry = std::make_shared<::Engine::Utils::Data::DataEntry>();
                 new_entry->SetName(key);
                 new_entry->New(json_str.size());
-                new_entry->Write([&](const std::shared_ptr<uint8_t[]>& data) {
+                new_entry->Write([&](const std::shared_ptr<uint8_t[]>& data) -> void {
                     memcpy(data.get(), json_str.data(), json_str.size());
                 });
                 dm->InsertEntry(key, new_entry);
@@ -190,21 +192,21 @@ inline void SetupGUIAPI(sol::state& state,
     auto gui_table = state.create_table();
 
     gui_table.set_function("set_background",
-                           [gm](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                           [gm](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
                                if (!gm)
                                    return;
                                gm->PushCommand(CmdSetBackground { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("rect",
-                           [gm](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) {
+                           [gm](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
                                if (!gm)
                                    return;
                                gm->PushCommand(CmdRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("debug_text",
-                           [gm](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) {
+                           [gm](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) -> void {
                                if (!gm)
                                    return;
                                gm->PushCommand(CmdDebugText { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) });
@@ -217,7 +219,7 @@ inline void SetupGUIAPI(sol::state& state,
                                 uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
                                 float _ptsize, int _quality,
                                 double _angle, float _acenter_x, float _acenter_y,
-                                sol::optional<int> z_order) {
+                                sol::optional<int> z_order) -> void {
                                if (!gm)
                                    return;
                                gm->PushCommand(CmdText { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = z_order.value_or(0) });
@@ -225,27 +227,27 @@ inline void SetupGUIAPI(sol::state& state,
 
     gui_table.set_function("draw_svg",
                            [gm](const std::string& _resname, float _x, float _y, int _w, int _h,
-                                float _angle, float _acenter_x, float _acenter_y, sol::optional<int> _z) {
+                                float _angle, float _acenter_x, float _acenter_y, sol::optional<int> _z) -> void {
                                if (!gm)
                                    return;
                                gm->PushCommand(CmdDrawSVG { .resname = _resname, .x = _x, .y = _y, .w = _w, .h = _h, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z.value_or(0) });
                            });
 
     gui_table.set_function("set_title",
-                           [gm](const std::string& title, sol::optional<int> z_order) {
+                           [gm](const std::string& title, sol::optional<int> z_order) -> void {
                                if (!gm)
                                    return;
                                gm->PushCommand(CmdSetTitle { .title = title, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("set_logical_size",
-                           [gm](int w, int h, sol::optional<int> z_order) {
+                           [gm](int w, int h, sol::optional<int> z_order) -> void {
                                if (!gm)
                                    return;
                                gm->PushCommand(CmdSetLogicalSize { .w = w, .h = h, .z_order = z_order.value_or(0) });
                            });
 
-    gui_table.set_function("disable_logical_size", [gm]() {
+    gui_table.set_function("disable_logical_size", [gm]() -> void {
         if (!gm)
             return;
         CmdDisableLogicalSize cmd { };
@@ -253,13 +255,56 @@ inline void SetupGUIAPI(sol::state& state,
     });
 
     gui_table.set_function("clear_queue",
-                           [gm]() {
+                           [gm]() -> void {
                                if (!gm)
                                    return;
                                gm->ClearQueue();
                            });
 
     state["gui"] = gui_table;
+}
+
+inline auto SetUpSndAPI(sol::state& state,
+                        const std::shared_ptr<::Engine::Sound::SoundManager>& mama) -> void
+{
+    auto snd_table = state.create_table();
+    snd_table.set_function("load_sound", [&mama](const std::string& resname, const std::string& label) -> int {
+        return mama->LoadSound(resname, label);
+    });
+
+    snd_table.set_function("create_track", [&mama](const std::string& sound_label) -> int {
+        return mama->CreateTrack(sound_label);
+    });
+
+    snd_table.set_function("play_track", [&mama](const std::string& track_label) -> int {
+        return mama->PlayTrack(track_label);
+    });
+
+    snd_table.set_function("set_track_audio", [&mama](const std::string& tl, const std::string& al) -> int {
+        return mama->SetTrackAudio(tl, al);
+    });
+
+    snd_table.set_function("erase_track", [&mama](const std::string& trackname) -> int {
+        return mama->EraseTrack(trackname);
+    });
+
+    snd_table.set_function("play_sfx", [&mama](const std::string& resname) -> int {
+        return mama->PlaySoundEffect(resname);
+    });
+
+    snd_table.set_function("get_track_list", [&mama] -> std::vector<std::string> {
+        return mama->GetTrackList();
+    });
+
+    snd_table.set_function("play_loop_track", [&mama](const std::string& label, int _c) -> int {
+        return mama->PlayLoopTrack(label, _c);
+    });
+
+    snd_table.set_function("stop_track_playing", [&mama](const std::string& label, int64_t fade) -> int {
+        return mama->StopTrackPlaying(label, fade);
+    });
+
+    state["snd"] = snd_table;
 }
 
 }; // namespace Engine::Utils::Script
