@@ -62,7 +62,7 @@ jobs:
             fluid-soundfont-gm \
             opencl-headers \
             ocl-icd-opencl-dev \
-            intel-opencl-icd
+            mesa-opencl-icd
 
       - name: Download LMMS AppImage
         run: |
