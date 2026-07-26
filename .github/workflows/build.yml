@@ -61,7 +61,8 @@ jobs:
             libfuse2 \
             fluid-soundfont-gm \
             opencl-headers \
-            ocl-icd-opencl-dev
+            ocl-icd-opencl-dev \
+            intel-opencl-icd
 
       - name: Download LMMS AppImage
         run: |
