@@ -10,6 +10,8 @@ set(CMAKE_CXX_COMPILER "clang++")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O3")
 project(AOSRPGGBSD VERSION 0.1.0 LANGUAGES C CXX)
 
+find_package(OpenCL REQUIRED)
+
 # Bootstrap CPM.cmake
 set(CPM_DOWNLOAD_VERSION 0.40.7)
 set(CPM_DOWNLOAD_LOCATION "${CMAKE_BINARY_DIR}/cmake/CPM_${CPM_DOWNLOAD_VERSION}.cmake")
@@ -236,7 +238,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf-static SDL3_image::SDL3_image-static SDL3_mixer::SDL3_mixer-static replxx lua sol2 nlohmann_json::nlohmann_json)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf-static SDL3_image::SDL3_image-static SDL3_mixer::SDL3_mixer-static replxx lua sol2 nlohmann_json::nlohmann_json OpenCL::OpenCL)
 
 # ── 快照功能测试 ──
 # add_executable(test_snapshot

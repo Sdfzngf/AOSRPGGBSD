@@ -18,6 +18,7 @@ import Engine.Utils.Arg.Format;
 import Engine.Utils.Arg.MArg;
 import Engine.Utils.DevConsole;
 import Engine.i18n;
+import Engine.GUI.OpenCL;
 
 Engine::Game g;
 
@@ -30,6 +31,15 @@ auto main(int argc, char* argv[]) -> int
 {
     Engine::Utils::Logger::Log("int main()", Engine::Utils::Logger::LogLevel::DEBUG);
     Engine::Utils::Arg::MArg mp = Engine::Utils::Arg::FormatParam(argc, const_cast<const char**>(argv), nullptr);
+
+    Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
+    auto ids = Engine::GUI::OpenCL::GetPlatformIDs();
+    auto nis = Engine::GUI::OpenCL::GetAllPlatformInfo(ids[0]);
+    for (auto& i : nis) {
+        Engine::Utils::Logger::Log(i, Engine::Utils::Logger::LogLevel::DEBUG);
+    }
+    Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
+
     if (mp._dev_console) {
         return Engine::Utils::DevConsole::MainAct(mp);
     } else if (mp._help) {

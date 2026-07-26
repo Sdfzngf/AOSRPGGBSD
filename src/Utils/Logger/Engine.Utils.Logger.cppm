@@ -95,6 +95,21 @@ auto Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = E
 }
 
 /**
+ * @brief 记录日志
+ *
+ * @param content 日志内容（pair）
+ * @param loglevel 日志等级
+ * @param end 结束符，默认为换行符
+ * @return int 看心情的返回值
+ */
+auto Log(std::pair<std::string, std::string> content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
+{
+    _log_pref();
+    printf("%s: %s\033[0m%c", content.first.c_str(), content.second.c_str(), end);
+    return 0;
+}
+
+/**
  * @brief 回调函数版本的Log
  *
  * @param callcallback 返回日志内容的回调函数
@@ -145,6 +160,7 @@ auto LogHex() -> int
 {
     // 我待会再来写这个
     // 没错
+    // 对
     return 0;
 }
 
