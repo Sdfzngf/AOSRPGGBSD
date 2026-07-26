@@ -10,6 +10,9 @@ module;
 module Engine.Sound.SoundManager:functions;
 
 import Engine.Sound.SoundManager;
+import Engine.Utils.Data.DataManager;
+import Engine.Utils.Data.DataEntry;
+import Engine.Utils.Data.DataEntry.EntryType;
 
 export namespace Engine::Sound {
 [[nodiscard]] auto SoundManager::LoadSoundInternal(const std::string& resname, const std::string& label) -> int
