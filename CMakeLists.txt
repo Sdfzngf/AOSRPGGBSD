@@ -144,6 +144,12 @@ CPMAddPackage(
                 "BUILD_SHARED_LIBS OFF"
 )
 
+CPMAddPackage(
+  NAME OpenCL-CLHPP
+  GITHUB_REPOSITORY KhronosGroup/OpenCL-CLHPP
+  GIT_TAG v2026.05.29
+)
+
 # Lua 5.5 移除了 lua.hpp，C++ 项目需自行提供 extern "C" 包装
 file(WRITE "${lua_SOURCE_DIR}/lua.hpp"
 "extern \"C\" {\n#include \"lua.h\"\n#include \"lualib.h\"\n#include \"lauxlib.h\"\n}\n")
@@ -238,7 +244,7 @@ target_sources(AOSRPGGBSD
 
 target_compile_features(AOSRPGGBSD PRIVATE cxx_std_26)
 #target_link_libraries(AOSRPGGBSD ${LIBS})
-target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf-static SDL3_image::SDL3_image-static SDL3_mixer::SDL3_mixer-static replxx lua sol2 nlohmann_json::nlohmann_json OpenCL::OpenCL)
+target_link_libraries(AOSRPGGBSD PRIVATE SDL3::SDL3-static SDL3_ttf::SDL3_ttf-static SDL3_image::SDL3_image-static OpenCL::HeadersCpp SDL3_mixer::SDL3_mixer-static replxx lua sol2 nlohmann_json::nlohmann_json OpenCL::OpenCL)
 
 # ── 快照功能测试 ──
 # add_executable(test_snapshot

@@ -2,7 +2,9 @@
  * @brief Main.cpp，程序入口，没了。
  *
  */
-
+#define CL_HPP_ENABLE_EXCEPTIONS
+#define CL_HPP_TARGET_OPENCL_VERSION 300
+#include <CL/opencl.hpp>
 #include <lua.hpp>
 #include <string>
 
@@ -32,13 +34,15 @@ auto main(int argc, char* argv[]) -> int
     Engine::Utils::Logger::Log("int main()", Engine::Utils::Logger::LogLevel::DEBUG);
     Engine::Utils::Arg::MArg mp = Engine::Utils::Arg::FormatParam(argc, const_cast<const char**>(argv), nullptr);
     try {
-        Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
         auto ids = Engine::GUI::OpenCL::GetPlatformIDs();
-        auto nis = Engine::GUI::OpenCL::GetAllPlatformInfo(ids[0]);
-        for (auto& i : nis) {
-            Engine::Utils::Logger::Log(i, Engine::Utils::Logger::LogLevel::DEBUG);
+        for (auto& j : ids) {
+            Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
+            auto nis = Engine::GUI::OpenCL::GetAllPlatformInfo(j);
+            for (auto& i : nis) {
+                Engine::Utils::Logger::Log(i, Engine::Utils::Logger::LogLevel::DEBUG);
+            }
+            Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
         }
-        Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
     } catch (...) {
         Engine::Utils::Logger::Log("Couldn't get OpenCL_Info", Engine::Utils::Logger::LogLevel::DEBUG);
     }

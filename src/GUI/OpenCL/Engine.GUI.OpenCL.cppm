@@ -1,5 +1,5 @@
 /**
- * @brief GUI模块-OpenCL渲染、计算
+ * @brief GUI模块-OpenCL渲染、计算（已弃用）
  *
  */
 module;
@@ -41,4 +41,8 @@ auto GetAllPlatformInfo(cl_platform_id platform) -> std::vector<std::pair<std::s
     return ret;
 }
 
+auto GetAllDeviceIDs(cl_platform_id& platform, cl_device_id& device) -> void
+{
+    clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 1, &device, nullptr);
+}
 }
