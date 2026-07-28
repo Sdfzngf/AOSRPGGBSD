@@ -24,5 +24,6 @@ struct MArg {
     // 打包资源
     bool _pack { false };
     std::vector<std::string> _pack_arg { };
+    bool _test_clhpp { false };
 };
 }

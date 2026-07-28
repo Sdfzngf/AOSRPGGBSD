@@ -45,4 +45,9 @@ auto GetAllDeviceIDs(cl_platform_id& platform, cl_device_id& device) -> void
 {
     clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 1, &device, nullptr);
 }
+
+auto _testclhpp() -> int
+{
+    return 0;
+}
 }

@@ -24,6 +24,7 @@ const std::unordered_map<std::string, std::function<void(Engine::Utils::Arg::MAr
     { "--test-param3", [](Engine::Utils::Arg::MArg& mp) -> void { mp._test_param3 = true; } },
     { "console", [](Engine::Utils::Arg::MArg& mp) -> void { mp._dev_console = true; } },
     { "help", [](Engine::Utils::Arg::MArg& mp) -> void { mp._help = true; } },
-    { "pack", [](Engine::Utils::Arg::MArg& mp) -> void { mp._pack = true; } }
+    { "pack", [](Engine::Utils::Arg::MArg& mp) -> void { mp._pack = true; } },
+    { "--test-clhpp", [](Engine::Utils::Arg::MArg& mp) -> void { mp._test_clhpp = true; } }
 };
 }

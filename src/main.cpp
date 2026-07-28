@@ -54,6 +54,7 @@ auto main(int argc, char* argv[]) -> int
         return 0;
     } else if (mp._pack) {
         return Engine::Utils::DevConsole::PackData(mp);
+    } else if (mp._test_clhpp) {
     }
     g.StartUp();
     g.MainLoop();
