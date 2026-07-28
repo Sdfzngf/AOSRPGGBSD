@@ -29,7 +29,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 endif()
 
 # ── 安全加固编译选项 ──
-add_compile_options(-fstack-protector-strong -fpie)
+add_compile_options(-fstack-protector-strong -fpie -DCL_HPP_TARGET_OPENCL_VERSION=200 -DCL_HPP_ENABLE_EXCEPTIONS)
 add_link_options(-Wl,-z,relro,-z,now -pie)
 # FORTIFY_SOURCE 需要优化级别≥1，仅 Release 模式启用
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=3")

@@ -2,8 +2,6 @@
  * @brief Main.cpp，程序入口，没了。
  *
  */
-#define CL_HPP_ENABLE_EXCEPTIONS
-#define CL_HPP_TARGET_OPENCL_VERSION 300
 #include <CL/opencl.hpp>
 #include <lua.hpp>
 #include <string>
@@ -55,6 +53,7 @@ auto main(int argc, char* argv[]) -> int
     } else if (mp._pack) {
         return Engine::Utils::DevConsole::PackData(mp);
     } else if (mp._test_clhpp) {
+        return Engine::GUI::OpenCL::_testclhpp();
     }
     g.StartUp();
     g.MainLoop();
