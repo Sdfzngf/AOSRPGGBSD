@@ -145,6 +145,12 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+  NAME OpenCL-Headers
+  GITHUB_REPOSITORY KhronosGroup/OpenCL-Headers
+  GIT_TAG v2026.05.29
+)
+
+CPMAddPackage(
   NAME OpenCL-CLHPP
   GITHUB_REPOSITORY KhronosGroup/OpenCL-CLHPP
   GIT_TAG v2026.05.29
