@@ -19,6 +19,7 @@ import Engine.Utils.Arg.MArg;
 import Engine.Utils.DevConsole;
 import Engine.i18n;
 import Engine.GUI.OpenCL;
+import Engine.Basics.sha256;
 
 Engine::Game g;
 
@@ -54,6 +55,8 @@ auto main(int argc, char* argv[]) -> int
         return Engine::Utils::DevConsole::PackData(mp);
     } else if (mp._test_clhpp) {
         return Engine::GUI::OpenCL::_testclhpp();
+    } else if (mp._test_sha256) {
+        return Engine::Basics::sha256::_test_sha256();
     }
     g.StartUp();
     g.MainLoop();

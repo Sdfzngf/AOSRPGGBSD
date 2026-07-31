@@ -28,6 +28,8 @@ auto FormatParam(const int argc, const char* argv[], const char* envp[]) -> MArg
         } else {
             if (ppara == "pack")
                 Mp._pack_arg.emplace_back(argv[i]);
+            else if (ppara == "--test-sha256")
+                Mp._test_sha256_arg.emplace_back(argv[i]);
             else
                 Engine::Utils::Logger::Log(Engine::i18n::fmt("未知参数 \"{}\"", argv[i]), Engine::Utils::Logger::LogLevel::WARN);
         }

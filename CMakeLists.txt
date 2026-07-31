@@ -206,6 +206,7 @@ target_sources(AOSRPGGBSD
                 FILES src/Basics/Engine.Basics.Random.cppm
                 FILES src/Basics/Engine.Basics.Memory.cppm
                 FILES src/Basics/Engine.Basics.Memory.MemoryStream.cppm
+                FILES src/Basics/Engine.Basics.sha256.cppm
                 FILES src/Basics/Engine.Basics.TextUtils.cppm
                 FILES src/Basics/Engine.Basics.TextUtils.functions.cppm
 

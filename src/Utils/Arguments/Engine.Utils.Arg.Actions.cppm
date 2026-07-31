@@ -25,6 +25,7 @@ const std::unordered_map<std::string, std::function<void(Engine::Utils::Arg::MAr
     { "console", [](Engine::Utils::Arg::MArg& mp) -> void { mp._dev_console = true; } },
     { "help", [](Engine::Utils::Arg::MArg& mp) -> void { mp._help = true; } },
     { "pack", [](Engine::Utils::Arg::MArg& mp) -> void { mp._pack = true; } },
-    { "--test-clhpp", [](Engine::Utils::Arg::MArg& mp) -> void { mp._test_clhpp = true; } }
+    { "--test-clhpp", [](Engine::Utils::Arg::MArg& mp) -> void { mp._test_clhpp = true; } },
+    { "--test-sha256", [](Engine::Utils::Arg::MArg& mp) -> void { mp._test_sha256 = true; } }
 };
 }

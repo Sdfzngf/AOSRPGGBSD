@@ -25,5 +25,7 @@ struct MArg {
     bool _pack { false };
     std::vector<std::string> _pack_arg { };
     bool _test_clhpp { false };
+    bool _test_sha256 { false };
+    std::vector<std::string> _test_sha256_arg { };
 };
 }
