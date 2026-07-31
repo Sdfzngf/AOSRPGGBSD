@@ -29,7 +29,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
 endif()
 
 # ── 安全加固编译选项 ──
-add_compile_options(-fstack-protector-strong -fpie -DCL_HPP_TARGET_OPENCL_VERSION=200 -DCL_HPP_ENABLE_EXCEPTIONS)
+add_compile_options(-fstack-protector-strong -fpie -DCL_HPP_TARGET_OPENCL_VERSION=300 -DCL_TARGET_OPENCL_VERSION=300 -DCL_HPP_ENABLE_EXCEPTIONS=1)
 add_link_options(-Wl,-z,relro,-z,now -pie)
 # FORTIFY_SOURCE 需要优化级别≥1，仅 Release 模式启用
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -D_FORTIFY_SOURCE=3")
@@ -154,6 +154,9 @@ CPMAddPackage(
   NAME OpenCL-CLHPP
   GITHUB_REPOSITORY KhronosGroup/OpenCL-CLHPP
   GIT_TAG v2026.05.29
+                "BUILD_EXAMPLES OFF"
+                "CLHPP_BUILD_TESTS OFF"
+                "BUILD_DOCS OFF"
 )
 
 # Lua 5.5 移除了 lua.hpp，C++ 项目需自行提供 extern "C" 包装
@@ -216,6 +219,8 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Arguments/Engine.Utils.Arg.Actions.cppm
                 FILES src/Utils/Arguments/Engine.Utils.Arg.MArg.cppm
                 FILES src/Utils/Arguments/Engine.Utils.Arg.Format.cppm
+
+                FILES src/Utils/Cache/Engine.Utils.Cache.cppm
 
                 FILES src/GUI/LDRM/Engine.GUI.LDRM.cppm
                 FILES src/GUI/OpenCL/Engine.GUI.OpenCL.cppm
