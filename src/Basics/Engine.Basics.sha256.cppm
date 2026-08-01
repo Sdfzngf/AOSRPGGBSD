@@ -88,7 +88,7 @@ auto sha256(const std::shared_ptr<uint8_t[]>& data, uint32_t size) -> std::share
     total_len += 8; // 最后 8 字节存放原始位长
 
     // 分配填充后的缓冲区并初始化为 0
-    auto padded = std::shared_ptr<uint8_t[]>(new uint8_t[total_len]);
+    auto padded = std::make_shared<uint8_t[]>(total_len);
     std::memset(padded.get(), 0, total_len);
 
     // 复制原始数据（若 data 有效且 size>0）
