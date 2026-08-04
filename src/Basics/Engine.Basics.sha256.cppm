@@ -2,11 +2,16 @@ module;
 
 #include <cstdint>
 #include <cstring>
+#include <iomanip>
+#include <ios>
 #include <memory>
 
 export module Engine.Basics.sha256;
 
 import Engine.Basics.Memory;
+import Engine.Utils.Logger;
+
+using Engine::Utils::Logger::Log;
 
 // SHA-256 常量 K[0..63]
 static const uint32_t K[64] = {
@@ -162,17 +167,35 @@ auto sha256(const std::shared_ptr<uint8_t[]>& data, uint32_t size) -> std::share
     return result;
 }
 
-auto sha256(const std::string& text) -> std::shared_ptr<uint8_t[]>
+auto sha256str(const std::string& text) -> std::shared_ptr<uint8_t[]>
 {
     std::shared_ptr<uint8_t[]> data = std::make_shared<uint8_t[]>(text.size());
     std::memcpy(data.get(), text.data(), text.size());
     return sha256(data, text.size());
 }
 
+template <auto _case_ = std::uppercase, typename T = const char*, typename T2 = const char*>
+auto sha256_s(const std::shared_ptr<uint8_t[]>& data, uint32_t size, T prefix = "", T2 suffix = "") -> std::string
+{
+    return ::Engine::Basics::Memory::to_hex_string<_case_, T, T2>(sha256(data, size), 32, prefix, suffix);
+}
+
+template <auto _case_ = std::uppercase, typename T = const char*, typename T2 = const char*>
+auto sha256str_s(const std::string& text, T prefix = "", T2 suffix = "") -> std::string
+{
+    return ::Engine::Basics::Memory::to_hex_string<_case_, T, T2>(sha256str(text), 32, prefix, suffix);
+}
+
 constexpr auto _test_sha256() -> int
 {
-    std::shared_ptr<uint8_t[]> result = sha256("元神驱动");
+    std::shared_ptr<uint8_t[]> result = sha256str("元神驱动");
     Engine::Basics::Memory::dump_hex(result.get(), 32);
+    std::string text = "[\\x";
+    Log(sha256str_s("元神驱动"));
+    Log(sha256str_s<std::uppercase>("元神驱动"));
+    Log(sha256str_s<std::nouppercase>("元神驱动"));
+    // Log(sha256str_s<std::noskipws>("元神驱动"));//err
+    Log(sha256str_s<std::nouppercase>("元神驱动", text, "]"));
     return 0;
 }
 
