@@ -198,22 +198,22 @@ void SaveDB(const auto& args, replxx::Replxx& replxx)
 
 export namespace Engine::Utils {
 
-constexpr const char* helpmsg = "AOSRPGGBSD v0.1\n"
-                                "命令行参数:\n"
-                                "    console     进入交互式控制台\n"
-                                "    pack        打包数据: pack <source>... <target> <desc>\n"
-                                "    help        输出本条信息\n"
-                                "控制台参数:\n"
-                                "    help        获取帮助信息\n"
-                                "    add         添加条目: add <name> <data> [type]\n"
-                                "                或 add <name> --file <path> [type]\n"
-                                "    listde      输出当前已加载的资源条目\n"
-                                "    show        显示条目内容: show <name>\n"
-                                "    rm          删除条目: rm <name>\n"
-                                "    load        加载数据库: load <path>\n"
-                                "    savedb      保存数据库: savedb <path> [desc]\n"
-                                "    exit        退出交互式控制台\n"
-                                "\n";
+inline const char* helpmsg = "AOSRPGGBSD v0.1\n"
+                             "命令行参数:\n"
+                             "    console     进入交互式控制台\n"
+                             "    pack        打包数据: pack <source>... <target> <desc>\n"
+                             "    help        输出本条信息\n"
+                             "控制台参数:\n"
+                             "    help        获取帮助信息\n"
+                             "    add         添加条目: add <name> <data> [type]\n"
+                             "                或 add <name> --file <path> [type]\n"
+                             "    listde      输出当前已加载的资源条目\n"
+                             "    show        显示条目内容: show <name>\n"
+                             "    rm          删除条目: rm <name>\n"
+                             "    load        加载数据库: load <path>\n"
+                             "    savedb      保存数据库: savedb <path> [desc]\n"
+                             "    exit        退出交互式控制台\n"
+                             "\n";
 std::unordered_map<std::string, std::function<void(const std::vector<std::string>&)>> handlers;
 class DevConsole {
 
