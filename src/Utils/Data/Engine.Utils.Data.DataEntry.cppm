@@ -19,6 +19,7 @@ import Engine.Utils.Logger;
 import Engine.Utils.Data.DB;
 import Engine.Utils.Data.DataEntry.EntryType;
 import Engine.Basics.Memory.MemoryStream;
+import Engine.Basics.sha256;
 
 export namespace Engine::Utils::Data {
 /**
@@ -26,17 +27,21 @@ export namespace Engine::Utils::Data {
  *
  */
 struct DataEntry {
+
+public:
     std::atomic<std::shared_ptr<const std::string>> Name { nullptr }; // 名称
     std::atomic<uint32_t> Size { 0 }; // 大小
     std::atomic<uint32_t> Type { 0 }; // 类型
     std::atomic<std::shared_ptr<uint8_t[]>> Data; // 数据
     mutable std::shared_mutex DataMutex; // 锁
+    ::Engine::Basics::sha256::sha256id ID;
 
     DataEntry() = default;
 
     DataEntry(const std::string& name, uint32_t size, const uint32_t type, const std::shared_ptr<uint8_t[]>& data)
         : Size(size)
         , Type(type)
+        , ID(::Engine::Basics::sha256::sha256(Data.load(), Size))
     {
         SetName(name);
 

@@ -6,6 +6,7 @@ module;
 
 #include <cstdint>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <type_traits>
 
@@ -41,7 +42,7 @@ private:
     /**
      * @brief 检查状态
      * @param rightsize 右值大小
-        * @return 0 表示可继续读写；非 0 表示当前状态或边界检查失败。
+     * @return 0 表示可继续读写；非 0 表示当前状态或边界检查失败。
      */
     auto CheckStat(uint64_t rightsize) -> int
     {
@@ -157,6 +158,9 @@ public:
             if (right.size > 0 && !right.block)
                 return 1;
             rightsize = right.size;
+        } else if constexpr (std::is_same_v<std::fstream, T>) {
+            right.write(reinterpret_cast<char*>(buffer.get()), buffersize);
+            return 0;
         } else {
             rightsize = sizeof(right);
         }

@@ -21,6 +21,7 @@ import Engine.GUI.GUIManager;
 import Engine.Sound.SoundManager;
 import Engine.i18n;
 import Engine.Utils.Cache;
+import Engine.Basics.Memory.MemoryStream;
 
 using Engine::Utils::Logger::Log;
 
@@ -93,19 +94,6 @@ auto Engine::Game::StartUp() -> void
         exit(3);
     }
 
-    // 播放测试音频，应在正式版本删去
-    int result = MM.load()->LoadSound("__Engine_BGM__@ITERATION.wav", "testWav");
-    if (result == 0) {
-        int re2 = MM.load()->CreateTrack("TestTrack");
-        if (re2 == 0) {
-            int re3 = MM.load()->SetTrackAudio("TestTrack", "testWav");
-            if (re3 == 0) {
-                int re4 = MM.load()->PlayLoopTrack("TestTrack", -1);
-            }
-        }
-    }
-    int resu2 = MM.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
-
     // 窗口相关
     wW = 640;
     wH = 480;
@@ -120,10 +108,25 @@ auto Engine::Game::StartUp() -> void
 
     // 运行Lua脚本
     SM.load()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
+    GM.load()->FlushCommands();
 
     Running = true;
 
     DM.load()->MountDB("./Game/background.dat");
+
     SM.load()->CreateWorker("background_renderer", "__Engine_Background__@renderer.lua");
+
+    // 播放测试音频，应在正式版本删去
+    int result = MM.load()->LoadSound("__Engine_BGM__@ITERATION.wav", "testWav");
+    if (result == 0) {
+        int re2 = MM.load()->CreateTrack("TestTrack");
+        if (re2 == 0) {
+            int re3 = MM.load()->SetTrackAudio("TestTrack", "testWav");
+            if (re3 == 0) {
+                int re4 = MM.load()->PlayLoopTrack("TestTrack", -1);
+            }
+        }
+    }
+    int resu2 = MM.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
 }
 }

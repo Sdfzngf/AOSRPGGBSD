@@ -1,8 +1,8 @@
 module;
 
+#include <atomic>
 #include <cstdint>
 #include <cstring>
-#include <iomanip>
 #include <ios>
 #include <memory>
 
@@ -34,31 +34,65 @@ static const uint32_t K[64] = {
 };
 
 export namespace Engine::Basics::sha256 {
-
+std::atomic<int> max_memblk_sz = 1440000;
 struct sha256id {
 private:
     std::string str_u;
     std::string str_l;
-    std::shared_ptr<uint8_t[]> mem;
+    std::shared_ptr<const uint8_t[]> mem;
 
 public:
+    sha256id()
+        : mem(nullptr)
+        , str_l("")
+        , str_u("")
+    {
+    }
     sha256id(const std::shared_ptr<uint8_t[]>& bmem)
         : mem(bmem)
         , str_u(::Engine::Basics::Memory::to_hex_string<std::uppercase>(bmem, 32))
         , str_l(::Engine::Basics::Memory::to_hex_string<std::nouppercase>(bmem, 32))
     {
     }
-    inline auto getustr() -> std::string
+    [[nodiscard]] inline auto getustr() const -> const std::string
     {
         return str_u;
     }
-    inline auto getlstr() -> std::string
+    [[nodiscard]] inline auto getlstr() const -> const std::string
     {
         return str_l;
     }
-    inline auto getb() -> std::shared_ptr<uint8_t[]>
+    [[nodiscard]] inline auto getb() const -> const std::shared_ptr<const uint8_t[]>
     {
         return mem;
+    }
+    [[nodiscard]] operator const std::string() const
+    {
+        return str_l;
+    }
+    [[nodiscard]] operator const std::shared_ptr<const uint8_t[]>() const
+    {
+        return mem;
+    }
+    [[nodiscard]] operator const uint8_t*() const
+    {
+        return mem.get();
+    }
+    [[nodiscard]] auto operator()() const -> const char*
+    {
+        return str_l.c_str();
+    }
+    [[nodiscard]] auto operator[](int index) const -> const char
+    {
+        return str_l[index];
+    }
+
+    [[nodiscard]] auto operator[](int begin, int end) const -> const std::string
+    {
+        if (begin > end) {
+            return "Convert error";
+        }
+        return str_l.substr(begin, end - begin);
     }
 };
 
@@ -112,8 +146,12 @@ inline auto sigma1(uint32_t x) -> uint32_t
 auto sha256(const std::shared_ptr<uint8_t[]>& data, uint32_t size) -> sha256id
 {
     // 1. 消息填充
-    uint64_t bit_len = static_cast<uint64_t>(size) * 8;
-    uint32_t total_len = size + 1; // 先加 1 字节 (0x80)
+    uint32_t tmpsz = size;
+    if (tmpsz > max_memblk_sz.load()) {
+        tmpsz = max_memblk_sz.load();
+    }
+    uint64_t bit_len = static_cast<uint64_t>(tmpsz) * 8;
+    uint32_t total_len = tmpsz + 1; // 先加 1 字节 (0x80)
     while ((total_len % 64) != 56) { // 填充至 56 字节（448 位）
         ++total_len;
     }
@@ -123,11 +161,11 @@ auto sha256(const std::shared_ptr<uint8_t[]>& data, uint32_t size) -> sha256id
     auto padded = std::make_shared<uint8_t[]>(total_len);
     std::memset(padded.get(), 0, total_len);
 
-    // 复制原始数据（若 data 有效且 size>0）
-    if (data && size > 0) {
-        std::memcpy(padded.get(), data.get(), size);
+    // 复制原始数据（若 data 有效且 tmpsz>0）
+    if (data && tmpsz > 0) {
+        std::memcpy(padded.get(), data.get(), tmpsz);
     }
-    padded[size] = 0x80; // 追加 '1' 位
+    padded[tmpsz] = 0x80; // 追加 '1' 位
 
     // 在最后 8 字节以大端序写入原始位长
     for (int i = 0; i < 8; ++i) {
@@ -204,9 +242,12 @@ auto sha256str(const std::string& text) -> sha256id
 auto _test_sha256() -> int
 {
     sha256id result = sha256str("元神驱动");
-    Engine::Basics::Memory::dump_hex(result.getb().get(), 32);
+    Engine::Basics::Memory::dump_hex(result, 32);
+    Log(sha256str("元神驱动"));
     Log(sha256str("元神驱动").getustr());
-    Log(sha256str("元神驱动").getlstr());
+    Log(result[0, 2]);
+    Log(result[1, 3]);
+    Log(result[9, 1]);
     return 0;
 }
 
