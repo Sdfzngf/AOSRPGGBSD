@@ -20,6 +20,7 @@ import Engine.Utils.Script.ScriptManager;
 import Engine.GUI.GUIManager;
 import Engine.Sound.SoundManager;
 import Engine.i18n;
+import Engine.Utils.Cache;
 
 using Engine::Utils::Logger::Log;
 
@@ -29,11 +30,14 @@ auto Engine::Game::StartUp() -> void
 {
     Log("void Engine::Game::StartUp()");
 
+    // 存入
     DM.store(std::make_shared<Engine::Utils::Data::DataManager>());
     SM.store(std::make_shared<Engine::Utils::Script::ScriptManager>());
     GM.store(std::make_shared<Engine::GUI::GUIManager>());
     MM.store(std::make_shared<Engine::Sound::SoundManager>());
+    CM.store(std::make_shared<Engine::Utils::Cache::CacheManager>());
 
+    // 绑定
     SM.load()->BindDataManager(DM);
     SM.load()->BindGUIManager(GM);
     GM.load()->BindDM(DM.load());
@@ -41,6 +45,7 @@ auto Engine::Game::StartUp() -> void
     SM.load()->BindSndManager(MM);
     GM.load()->BindMM(MM.load());
 
+    // 国际化
     std::string myth = Engine::Basics::Random::rand_str(256);
     DM.load()->CreateSnapshotAll(myth);
     DM.load()->MountDB("./Lang/Lang.dat");
@@ -62,24 +67,33 @@ auto Engine::Game::StartUp() -> void
         });
     }
 
+    // Lua相关
     SM.load()->OpenLibs();
     SM.load()->SetupMainDMAPI();
     SM.load()->SetupSndLuaAPI();
     SM.load()->SetupGUILuaAPI();
 
+    // 基本数据文件
     DM.load()->MountDB("./Test/worker.dat");
     DM.load()->MountDB("./Game/BGM.dat");
     DM.load()->MountDB("./Game/SFX.dat");
     DM.load()->MountDB("./Game/startup.dat");
     DM.load()->MountDB("./Game/fonts.dat");
-    // SM.load().get()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
+    // SM.load()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
 
+    // 初始化
     if (GM.load()->Init("SDL") != 0)
         exit(1);
 
     if (MM.load()->Init() != 0) {
         exit(2);
     }
+
+    if (CM.load()->Init("./.Cache/") != 0) {
+        exit(3);
+    }
+
+    // 播放测试音频，应在正式版本删去
     int result = MM.load()->LoadSound("__Engine_BGM__@ITERATION.wav", "testWav");
     if (result == 0) {
         int re2 = MM.load()->CreateTrack("TestTrack");
@@ -91,6 +105,8 @@ auto Engine::Game::StartUp() -> void
         }
     }
     int resu2 = MM.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
+
+    // 窗口相关
     wW = 640;
     wH = 480;
 
@@ -100,10 +116,10 @@ auto Engine::Game::StartUp() -> void
         return;
 
     GM.load()->SetLogicalSizeM(1280, 720);
-
-    SM.load()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
-
     GM.load()->FlushCommands();
+
+    // 运行Lua脚本
+    SM.load()->RunScript(std::string("__Engine_StartUp__@startup.lua"));
 
     Running = true;
 

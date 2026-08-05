@@ -13,6 +13,7 @@ import Engine.Utils.Script.ScriptManager;
 import Engine.Utils.Data.DataManager;
 import Engine.GUI.GUIManager;
 import Engine.Sound.SoundManager;
+import Engine.Utils.Cache;
 
 export namespace Engine {
 class Game {
@@ -21,6 +22,7 @@ private:
     std::atomic<std::shared_ptr<Engine::Utils::Script::ScriptManager>> SM;
     std::atomic<std::shared_ptr<Engine::GUI::GUIManager>> GM;
     std::atomic<std::shared_ptr<Engine::Sound::SoundManager>> MM;
+    std::atomic<std::shared_ptr<Engine::Utils::Cache::CacheManager>> CM;
     std::atomic<bool> Running = false;
     std::atomic<int> wH, wW;
 

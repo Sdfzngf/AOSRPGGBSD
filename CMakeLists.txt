@@ -177,6 +177,7 @@ add_executable(AOSRPGGBSD
         src/main.cpp
 )
 
+
 add_custom_target(PackRes
         COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_BINARY_DIR}/bin/Game ${CMAKE_BINARY_DIR}/bin/Lang ${CMAKE_BINARY_DIR}/bin/Test
         COMMAND $<TARGET_FILE:AOSRPGGBSD> pack ../src/Resources/startup.rres ./bin/Game/startup.dat 11451
