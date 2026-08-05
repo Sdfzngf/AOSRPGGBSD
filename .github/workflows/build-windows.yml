@@ -1,0 +1,153 @@
+name: Build and Package (Windows)
+
+on:
+  push:
+    branches: [master, main]
+    tags: ["v*"]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (Windows, MSVC, Release)
+    runs-on: windows-latest
+
+    env:
+      BUILD_TYPE: Release
+      BUILD_DIR: ${{ github.workspace }}/build
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ninja
+        uses: seanmiddleditch/gha-setup-ninja@v5
+
+      - name: Setup vcpkg
+        run: |
+          git clone https://github.com/Microsoft/vcpkg.git "$env:VCPKG_ROOT"
+          & "$env:VCPKG_ROOT\bootstrap-vcpkg.bat"
+          echo "$env:VCPKG_ROOT" >> $env:GITHUB_PATH
+        shell: pwsh
+
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.VCPKG_ROOT }}/packages
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('**/vcpkg.json') }}
+          restore-keys: |
+            vcpkg-${{ runner.os }}-
+
+      - name: Install OpenCL via vcpkg
+        run: |
+          vcpkg install opencl:x64-windows --recurse
+        shell: pwsh
+
+      - name: Download and extract LMMS (Windows)
+        run: |
+          $LMMS_URL = "https://github.com/LMMS/lmms/releases/download/v1.3.0-alpha.1/lmms-1.3.0-alpha.1.102+g89fc6c960-mingw-win64.exe"
+          $LMMS_EXE = "lmms-installer.exe"
+          Invoke-WebRequest -Uri $LMMS_URL -OutFile $LMMS_EXE
+          7z x -y $LMMS_EXE -olmmms_portable
+          # 查找 lmms.exe 实际位置（可能在 App/LMMS/bin 或直接 bin 下）
+          $lmmsExe = Get-ChildItem -Path lmmms_portable -Recurse -Filter "lmms.exe" | Select-Object -First 1
+          if ($lmmsExe) {
+            $lmmsDir = $lmmsExe.Directory.FullName
+            echo "LMMS found at $lmmsDir"
+            echo "$lmmsDir" >> $env:GITHUB_PATH
+          } else {
+            Write-Error "lmms.exe not found in extracted files"
+            exit 1
+          }
+        shell: pwsh
+
+      - name: Verify LMMS installation
+        run: lmms --version || true
+        shell: pwsh
+
+      - name: Restore CPM dependencies cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUILD_DIR }}/_deps
+          key: cpm-windows-${{ hashFiles('CMakeLists.txt', 'cpm-package-lock.cmake') }}
+          restore-keys: |
+            cpm-windows-
+
+      - name: Configure CMake
+        run: |
+          cmake -B "$env:BUILD_DIR" `
+            -G Ninja `
+            -DCMAKE_BUILD_TYPE="$env:BUILD_TYPE" `
+            -DCMAKE_C_COMPILER=cl `
+            -DCMAKE_CXX_COMPILER=cl `
+            -DCMAKE_CXX_STANDARD=26 `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+        shell: pwsh
+
+      - name: Build
+        run: cmake --build "$env:BUILD_DIR" --config "$env:BUILD_TYPE" --parallel
+        shell: pwsh
+
+      - name: Patch .mmpz SoundFont paths (Windows)
+        run: |
+          python -c "
+          import zlib, os, glob, re
+          ws = r'${{ github.workspace }}'
+          lmms_dir = r'${{ github.workspace }}/lmmms_portable'
+          # 查找 FluidR3_GM.sf2 在 LMMS 解压目录中的位置
+          sf2_path = None
+          for root, dirs, files in os.walk(lmms_dir):
+              if 'FluidR3_GM.sf2' in files:
+                  sf2_path = os.path.join(root, 'FluidR3_GM.sf2')
+                  break
+          if not sf2_path:
+              print('FluidR3_GM.sf2 not found, using default path')
+              sf2_path = r'C:/Program Files/LMMS/soundfonts/FluidR3_GM.sf2'  # fallback
+          sf2_path = sf2_path.replace('\\', '/')
+          trumpet_path = os.path.join(ws, 'src/Resources/BGM/小号.sf2').replace('\\', '/')
+          for mmpz in glob.glob(os.path.join(ws, 'src/Resources/BGM/*.mmpz')):
+              with open(mmpz, 'rb') as f:
+                  data = f.read()
+              xml = zlib.decompress(data[4:]).decode('utf-8')
+              xml = xml.replace('src=\"soundfonts/FluidR3_GM.sf2\"', f'src=\"{sf2_path}\"')
+              xml = xml.replace('src=\"soundfonts/小号.sf2\"', f'src=\"{trumpet_path}\"')
+              new_data = data[:4] + zlib.compress(xml.encode('utf-8'))
+              with open(mmpz, 'wb') as f:
+                  f.write(new_data)
+          print('Patched .mmpz SoundFont paths')
+          "
+        shell: pwsh
+
+      - name: Build BGM (export music via LMMS)
+        timeout-minutes: 10
+        run: cmake --build "$env:BUILD_DIR" --config "$env:BUILD_TYPE" --target BGM
+        shell: pwsh
+
+      - name: Pack resources
+        run: cmake --build "$env:BUILD_DIR" --config "$env:BUILD_TYPE" --target PackRes
+        shell: pwsh
+
+      - name: Package artifacts
+        run: |
+          mkdir dist
+          tar -czf "dist/AOSRPGGBSD-${{ github.ref_name }}-windows-x86_64.tar.gz" `
+            -C "$env:BUILD_DIR/bin" .
+        shell: pwsh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AOSRPGGBSD-${{ github.ref_name }}-windows-x86_64
+          path: dist/AOSRPGGBSD-${{ github.ref_name }}-windows-x86_64.tar.gz
+          if-no-files-found: error
+
+      - name: Create GitHub Release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/AOSRPGGBSD-${{ github.ref_name }}-windows-x86_64.tar.gz
+          generate_release_notes: true
