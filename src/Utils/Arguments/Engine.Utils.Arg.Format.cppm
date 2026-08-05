@@ -6,6 +6,7 @@ module;
 
 #include <functional>
 #include <ranges>
+#include <string>
 #include <unordered_map>
 
 export module Engine.Utils.Arg.Format;

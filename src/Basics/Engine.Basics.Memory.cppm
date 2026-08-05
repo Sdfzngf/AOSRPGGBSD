@@ -6,12 +6,10 @@ module;
 
 #include <array>
 #include <cstdint>
-#include <iomanip>
+#include <format>
 #include <ios>
 #include <memory>
-#include <print>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 
 export module Engine.Basics.Memory;
@@ -69,31 +67,31 @@ auto dump_hex(const uint8_t* buf, uint32_t size) -> void
     Log("\033[94m├──────────┼──────────────────────────────────────────────────┼──────────────────┤\033[0m");
     for (uint32_t i = 0; i < size; i += 16) {
         std::stringstream ss;
-        std::print(ss, "\033[94m│\033[0m {:08X} \033[94m│\033[0m ", i);
+        ss << std::format("\033[94m│\033[0m {:08X} \033[94m│\033[0m ", i);
 
         for (int j = 0; j < 16; j++) {
             if (i + j < size) {
-                std::print(ss, "\033[{}m{:02X} \033[0m", (j % 2 == 0) ? (31 + ((j / 2) % 4)) : (91 + ((j / 2) % 4)), buf[i + j]);
+                ss << std::format("\033[{}m{:02X} \033[0m", (j % 2 == 0) ? (31 + ((j / 2) % 4)) : (91 + ((j / 2) % 4)), buf[i + j]);
                 if (j == 7) {
-                    std::print(ss, " ");
+                    ss << std::format(" ");
                 }
             } else {
-                std::print(ss, "   ");
+                ss << std::format("   ");
                 if (j == 7) {
-                    std::print(ss, " ");
+                    ss << std::format(" ");
                 }
             }
         }
-        std::print(ss, "\033[94m│\033[0m ");
+        ss << std::format("\033[94m│\033[0m ");
 
         for (int j = 0; j < 16; j++) {
             if (i + j < size) {
                 uint8_t ch = buf[i + j];
                 char c = ((static_cast<unsigned int>(ch) - ' ') < 127u - ' ') ? static_cast<char>(ch) : '.';
-                std::print(ss, "{}", c);
+                ss << std::format("{}", c);
             }
         }
-        std::print(ss, " \033[94m│\033[0m");
+        ss << std::format(" \033[94m│\033[0m");
         Log(ss.str());
         Log("\033[94m├──────────┼──────────────────────────────────────────────────┼──────────────────┤\033[0m");
     }
