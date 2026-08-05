@@ -186,7 +186,7 @@ auto sha256str_s(const std::string& text, T prefix = "", T2 suffix = "") -> std:
     return ::Engine::Basics::Memory::to_hex_string<_case_, T, T2>(sha256str(text), 32, prefix, suffix);
 }
 
-constexpr auto _test_sha256() -> int
+auto _test_sha256() -> int
 {
     std::shared_ptr<uint8_t[]> result = sha256str("元神驱动");
     Engine::Basics::Memory::dump_hex(result.get(), 32);
