@@ -417,7 +417,7 @@ public:
                 }
                 // 获取 .rres 文件所在目录，用于解析 --file 相对路径
                 const std::filesystem::path rresDir = std::filesystem::absolute(i).parent_path();
-                std::string filename = std::filesystem::path(i).filename();
+                std::string filename = std::filesystem::path(i).filename().string();
                 filename += "@";
                 std::string line;
                 while (std::getline(file, line)) {
