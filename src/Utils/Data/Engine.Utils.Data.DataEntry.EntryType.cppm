@@ -19,7 +19,8 @@ enum class EntryType : uint8_t {
     png = 4,
     svg = 5,
     Sound = 6,
-    Font = 7
+    Font = 7,
+    CLC = 8
 };
 
 }

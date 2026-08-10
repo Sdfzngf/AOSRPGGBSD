@@ -80,6 +80,7 @@ auto Engine::Game::StartUp() -> void
     DM.load()->MountDB("./Game/SFX.dat");
     DM.load()->MountDB("./Game/startup.dat");
     DM.load()->MountDB("./Game/fonts.dat");
+    DM.load()->MountDB("./Game/background.dat");
     // SM.load()->RunScript(std::string("__Engine_Test_Worker__@workertest.lua"));
 
     // 初始化
@@ -111,8 +112,6 @@ auto Engine::Game::StartUp() -> void
     GM.load()->FlushCommands();
 
     Running = true;
-
-    DM.load()->MountDB("./Game/background.dat");
 
     SM.load()->CreateWorker("background_renderer", "__Engine_Background__@renderer.lua");
 

@@ -59,6 +59,8 @@ static auto ParseEntryType(const std::string& typeText) -> uint32_t
         return 6;
     if (typeText == "7" || typeText == "font" || typeText == "Font")
         return 7;
+    if (typeText == "8" || typeText == "clc" || typeText == "CLC")
+        return 8;
     return 0;
 }
 
