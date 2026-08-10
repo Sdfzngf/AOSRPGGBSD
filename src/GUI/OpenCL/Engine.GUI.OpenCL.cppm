@@ -15,13 +15,54 @@ module;
 export module Engine.GUI.OpenCL;
 
 import Engine.Utils.Logger;
+import Engine.Utils.Logger.LogLevel;
 import Engine.i18n;
 
 using Engine::i18n::fmt;
 using Engine::Utils::Logger::Log;
+using Engine::Utils::Logger::LogLevel;
 
 export namespace Engine::GUI::OpenCL {
 const int numElements = 32;
+bool _init { false };
+std::vector<cl::Platform> _clPlatforms { };
+cl::Platform _currentPlatform;
+
+auto OpenCLEnvInit() -> char
+{
+    if (!_init) {
+        cl::Platform::get(&_clPlatforms);
+
+        cl::Platform plat;
+        int index = 0;
+        for (auto& p : _clPlatforms) {
+            std::string platver = p.getInfo<CL_PLATFORM_VERSION>();
+            if (platver.find("OpenCL 2.") != std::string::npos || platver.find("OpenCL 3.") != std::string::npos) {
+                std::vector<cl::Device> devices;
+                p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
+                if (!devices.empty()) {
+                    plat = p;
+                    break;
+                }
+            }
+            index++;
+        }
+
+        if (plat() == nullptr) {
+            Log(fmt("未找到支持 OpenCL 2.0 或较新版本的设备平台"), LogLevel::ERROR);
+            return -1;
+        }
+
+        _currentPlatform = cl::Platform::setDefault(plat);
+        if (_currentPlatform != plat) {
+            Log(fmt("设置 OpenCL 平台失败"));
+            return -2;
+        }
+
+        _init = true;
+    }
+    return 0;
+}
 
 auto GetPlatformIDs() -> std::vector<cl_platform_id>
 {
@@ -62,31 +103,7 @@ auto GetAllDeviceIDs(cl_platform_id& platform, cl_device_id& device) -> void
 // 将于多次提交后删除
 auto _testclhpp() -> int
 {
-    std::vector<cl::Platform> platforms;
-    cl::Platform::get(&platforms);
-    cl::Platform plat;
-    for (auto& p : platforms) {
-        std::string platver = p.getInfo<CL_PLATFORM_VERSION>();
-        if (platver.find("OpenCL 2.") != std::string::npos || platver.find("OpenCL 3.") != std::string::npos) {
-            std::vector<cl::Device> devices;
-            p.getDevices(CL_DEVICE_TYPE_ALL, &devices);
-            if (!devices.empty()) {
-                plat = p;
-                break;
-            }
-        }
-    }
-
-    if (plat() == nullptr) {
-        Log(fmt("未找到支持 OpenCL 2.0 或较新版本的设备平台"));
-        return -1;
-    }
-
-    cl::Platform newP = cl::Platform::setDefault(plat);
-    if (newP != plat) {
-        Log(fmt("设置 OpenCL 平台失败"));
-        return -1;
-    }
+    OpenCLEnvInit();
 
     // C++11 raw string literal for the first kernel
     std::string kernel1 { R"CLC(
