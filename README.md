@@ -21,3 +21,17 @@ cd build
 cmake -G "Ninja" ..
 ninja && ninja BGM && ninja PackRes
 ```
+
+| 功能 | 实现状态 | 备注 |
+| :----- | :----- | :----- |
+|跨平台|OK||
+| 数据文件的加载/保存 | [完成] | |
+| DataManager的快照 | 存疑 |AI |
+| GUI支持(绘制图片(SVG)/文本) | 部分||
+| 多线程Lua(Worker) | [完成]|AI|
+|Logger|[完成]||
+|BGM/SFX播放|[完成]||
+|命令行参数处理|[完成]||
+|长的像OOP的ECS|没头绪||
+|OpenCL的渲染器|起步||
+|矢量3D渲染|没头绪||

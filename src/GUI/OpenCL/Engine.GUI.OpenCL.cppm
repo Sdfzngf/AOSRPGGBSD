@@ -110,7 +110,7 @@ auto _testclhpp() -> int
         global int globalA;
         kernel void updateGlobal()
         {
-          globalA = 75;
+          globalA = 80;
         }
     )CLC" };
 
