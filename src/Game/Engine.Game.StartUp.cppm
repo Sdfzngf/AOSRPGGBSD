@@ -116,7 +116,7 @@ auto Engine::Game::StartUp() -> void
     SM.load()->CreateWorker("background_renderer", "__Engine_Background__@renderer.lua");
 
     // 播放测试音频，应在正式版本删去
-    int result = MM.load()->LoadSound("__Engine_BGM__@ITERATION.wav", "testWav");
+    int result = MM.load()->LoadSound("__Engine_BGM__@FallInMyDream.wav", "testWav");
     if (result == 0) {
         int re2 = MM.load()->CreateTrack("TestTrack");
         if (re2 == 0) {
