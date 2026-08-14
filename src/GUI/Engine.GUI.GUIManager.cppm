@@ -11,6 +11,7 @@ module;
 #include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 export module Engine.GUI.GUIManager;
@@ -48,6 +49,10 @@ private:
     std::vector<RenderCommand> cmd_queue_back_;
     mutable std::mutex cmd_mtx_;
 
+    // Worker 帧快照：每个 Worker 独立一个槽，主线程合并渲染（避免多 Worker 互相覆盖）
+    std::unordered_map<std::string, std::shared_ptr<std::vector<RenderCommand>>> worker_snapshots_;
+    mutable std::mutex snapshot_mtx_;
+
 public:
     [[nodiscard]] auto Init(std::string guilib = "SDL") -> int;
 
@@ -61,6 +66,12 @@ public:
 
     /// 从任意线程推入渲染命令（写入 back 缓冲）
     auto PushCommand(RenderCommand cmd) -> void;
+
+    /// Worker 帧末提交完整帧快照（按名字分槽，主线程每帧合并渲染）
+    auto SetWorkerSnapshot(const std::string& worker_name, std::vector<RenderCommand>&& cmds) -> void;
+
+    /// Worker 退出时清除其快照槽
+    auto ClearWorkerSnapshot(const std::string& worker_name) -> void;
 
     /// 清空命令队列（不执行）
     auto ClearQueue() -> void;

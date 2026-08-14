@@ -17,6 +17,7 @@ module;
 #include <sol/sol.hpp>
 #include <string>
 #include <thread>
+#include <vector>
 
 export module Engine.Utils.Script.Worker;
 
@@ -84,17 +85,17 @@ public:
     [[nodiscard]] auto GetName() const -> const std::string& { return name_; }
     [[nodiscard]] auto IsFrameMode() const -> bool { return frame_mode_.load(); }
 
-    /// 主线程每帧调用，唤醒帧模式 Worker 并等待其完成渲染
+    /// 主线程每帧调用，唤醒帧模式 Worker（异步，不等待）
     auto TickFrame(double dt) -> void
     {
         if (!frame_mode_.load())
             return;
-        std::unique_lock lock(frame_sync_mtx_);
-        frame_dt_ = dt;
-        frame_ready_ = true;
+        {
+            std::lock_guard lock(frame_sync_mtx_);
+            frame_dt_ = dt;
+            frame_ready_ = true;
+        }
         frame_cv_.notify_one();
-        // 等待 Worker 完成帧（frame_ready_ 被 Worker 清除表示完成）
-        frame_cv_.wait(lock, [this] -> bool { return !frame_ready_; });
     }
 
     /// 通知帧模式 Worker 退出（Shutdown 时调用）
@@ -180,15 +181,17 @@ private:
                     frame_cv_.wait(lock, [this] -> bool { return frame_ready_ || should_exit_.load(); });
                     if (should_exit_.load())
                         break;
+                    frame_ready_ = false; // 消费帧信号
                 }
-                // 锁在此释放 → 执行帧（不持锁）→ 帧完成后再获取锁通知主线程
 
+                // 清空上一帧残留命令，然后执行帧（命令写本地缓冲）
+                frame_cmds_.clear();
                 auto r2 = cr(frame_dt_);
 
-                {
-                    std::lock_guard lock(frame_sync_mtx_);
-                    frame_ready_ = false; // 帧完成，清除 ready 唤醒主线程
-                    frame_cv_.notify_one();
+                // 帧末提交完整帧快照（主线程持续渲染最近一次快照）
+                if (gm_) {
+                    gm_->SetWorkerSnapshot(name_, std::move(frame_cmds_));
+                    frame_cmds_.clear();
                 }
 
                 if (!r2.valid()) {
@@ -220,6 +223,10 @@ private:
         frame_mode_.store(false);
         running_.store(false);
         init_done_.store(true);
+        // 清理该 Worker 的快照槽，避免残留旧帧
+        if (gm_) {
+            gm_->ClearWorkerSnapshot(name_);
+        }
     }
 
     void SetupLuaAPI(LuaState& lua)
@@ -246,8 +253,10 @@ private:
         dm_table.set_function("getworkername", [this]() -> std::string { return name_; });
         dm_table.set_function("should_exit", [this]() -> bool { return should_exit_.load(); });
 
-        // ── 公共 gui API ──
-        SetupGUIAPI(state, gm_);
+        // ── 公共 gui API（命令写入帧内本地缓冲，帧末批量提交）──
+        SetupGUIAPI(state,
+                    [this](RenderCommand cmd) { frame_cmds_.push_back(std::move(cmd)); },
+                    [this]() { frame_cmds_.clear(); });
         SetUpSndAPI(state, mama_);
 
         // ── sleep_frame ──
@@ -272,6 +281,7 @@ private:
     std::condition_variable frame_cv_;
     double frame_dt_ { 0.0 };
     bool frame_ready_ { false };
+    std::vector<RenderCommand> frame_cmds_; // 帧内本地命令缓冲（仅 Worker 线程访问）
     std::thread thread_;
 };
 

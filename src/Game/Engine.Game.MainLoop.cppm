@@ -6,6 +6,7 @@ module;
 
 #include <cmath>
 #include <string>
+#include <sys/time.h>
 #include <vector>
 
 module Engine.Game:MainLoop;
@@ -16,6 +17,33 @@ import Engine.i18n;
 import Engine.Utils.Time;
 
 using Engine::Utils::Logger::Log;
+
+auto fps_average_count(int cycle_seconds) -> int
+{
+
+    static struct timeval time_start, time_end;
+    static bool init = false;
+    static int count = 0, fps = 0;
+
+    if (!init) {
+        init = true;
+        gettimeofday(&time_start, nullptr);
+        gettimeofday(&time_end, nullptr);
+        return 0;
+    } else {
+        long cycle = time_end.tv_sec - time_start.tv_sec;
+        gettimeofday(&time_end, nullptr);
+        if (cycle == cycle_seconds) {
+            gettimeofday(&time_start, nullptr);
+            fps = count;
+            count = 0;
+            return fps / cycle_seconds;
+        }
+        count++;
+        return fps / cycle_seconds;
+    }
+    return 0;
+}
 
 export namespace Engine {
 auto Engine::Game::MainLoop() -> void
@@ -30,7 +58,7 @@ auto Engine::Game::MainLoop() -> void
     while (Running) {
         prevTime = Engine::Utils::Time::GetAppRunningTime();
 
-        GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}", wW.load(), wH.load(), static_cast<int>(FPS)));
+        GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}, FPS avg: {}", wW.load(), wH.load(), static_cast<int>(FPS), fps_average_count(1)));
         //
         GM.load().get()->SetBackgroundM(0, 0, 0, 255, -2147483648);
         GM.load().get()->FillRectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 100, 100, 100, 100, -2147483647);
@@ -65,8 +93,9 @@ auto Engine::Game::MainLoop() -> void
         x += deltaTime * xr * 100;
         y += deltaTime * yr * 100;
 
-        SM.load().get()->TickFrameWorkers(deltaTime);
+        // 先消费上一帧命令（C++ 本帧 + Worker 上一帧），再唤醒 Worker 开始新帧
         GM.load().get()->FlushCommands();
+        SM.load().get()->TickFrameWorkers(deltaTime);
 
         GM.load().get()->Update(Running);
 

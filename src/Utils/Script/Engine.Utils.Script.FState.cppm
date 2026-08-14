@@ -8,6 +8,7 @@ module;
 
 #include <cstdio>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <sol/sol.hpp>
@@ -187,78 +188,61 @@ inline auto SetupDMBaseAPI(sol::table& dm_table,
 
 /// 注入全局 gui 表（所有渲染命令推送函数）
 inline void SetupGUIAPI(sol::state& state,
-                        const std::shared_ptr<::Engine::GUI::GUIManager>& gm)
+                        const std::function<void(RenderCommand)>& emit,
+                        const std::function<void()>& clear)
 {
     auto gui_table = state.create_table();
 
     gui_table.set_function("set_background",
-                           [gm](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
-                               if (!gm)
-                                   return;
-                               gm->PushCommand(CmdSetBackground { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
+                           [emit](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
+                                                              emit(CmdSetBackground { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("rect",
-                           [gm](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
-                               if (!gm)
-                                   return;
-                               gm->PushCommand(CmdRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
+                           [emit](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
+                                                              emit(CmdRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("debug_text",
-                           [gm](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) -> void {
-                               if (!gm)
-                                   return;
-                               gm->PushCommand(CmdDebugText { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) });
+                           [emit](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) -> void {
+                                                              emit(CmdDebugText { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("text",
-                           [gm](const std::string& te, const std::string& fname,
+                           [emit](const std::string& te, const std::string& fname,
                                 float _x, float _y,
                                 uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
                                 uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
                                 float _ptsize, int _quality,
                                 double _angle, float _acenter_x, float _acenter_y,
                                 sol::optional<int> z_order) -> void {
-                               if (!gm)
-                                   return;
-                               gm->PushCommand(CmdText { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = z_order.value_or(0) });
+                                                              emit(CmdText { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("draw_svg",
-                           [gm](const std::string& _resname, float _x, float _y, int _w, int _h,
+                           [emit](const std::string& _resname, float _x, float _y, int _w, int _h,
                                 float _angle, float _acenter_x, float _acenter_y, sol::optional<int> _z) -> void {
-                               if (!gm)
-                                   return;
-                               gm->PushCommand(CmdDrawSVG { .resname = _resname, .x = _x, .y = _y, .w = _w, .h = _h, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z.value_or(0) });
+                                                              emit(CmdDrawSVG { .resname = _resname, .x = _x, .y = _y, .w = _w, .h = _h, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z.value_or(0) });
                            });
 
     gui_table.set_function("set_title",
-                           [gm](const std::string& title, sol::optional<int> z_order) -> void {
-                               if (!gm)
-                                   return;
-                               gm->PushCommand(CmdSetTitle { .title = title, .z_order = z_order.value_or(0) });
+                           [emit](const std::string& title, sol::optional<int> z_order) -> void {
+                                                              emit(CmdSetTitle { .title = title, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("set_logical_size",
-                           [gm](int w, int h, sol::optional<int> z_order) -> void {
-                               if (!gm)
-                                   return;
-                               gm->PushCommand(CmdSetLogicalSize { .w = w, .h = h, .z_order = z_order.value_or(0) });
+                           [emit](int w, int h, sol::optional<int> z_order) -> void {
+                                                              emit(CmdSetLogicalSize { .w = w, .h = h, .z_order = z_order.value_or(0) });
                            });
 
-    gui_table.set_function("disable_logical_size", [gm]() -> void {
-        if (!gm)
-            return;
-        CmdDisableLogicalSize cmd { };
-        gm->PushCommand(cmd);
+    gui_table.set_function("disable_logical_size", [emit]() -> void {
+                CmdDisableLogicalSize cmd { };
+        emit(cmd);
     });
 
     gui_table.set_function("clear_queue",
-                           [gm]() -> void {
-                               if (!gm)
-                                   return;
-                               gm->ClearQueue();
+                           [clear]() -> void {
+                               clear();
                            });
 
     state["gui"] = gui_table;

@@ -112,6 +112,19 @@ auto GUIManager::PushCommand(RenderCommand cmd) -> void
     cmd_queue_back_.push_back(std::move(cmd));
 }
 
+auto GUIManager::SetWorkerSnapshot(const std::string& worker_name, std::vector<RenderCommand>&& cmds) -> void
+{
+    auto snap = std::make_shared<std::vector<RenderCommand>>(std::move(cmds));
+    std::lock_guard lock(snapshot_mtx_);
+    worker_snapshots_[worker_name] = std::move(snap); // 按名字替换快照
+}
+
+auto GUIManager::ClearWorkerSnapshot(const std::string& worker_name) -> void
+{
+    std::lock_guard lock(snapshot_mtx_);
+    worker_snapshots_.erase(worker_name);
+}
+
 /// 清空命令队列（不执行）
 auto GUIManager::ClearQueue() -> void
 {
@@ -122,20 +135,48 @@ auto GUIManager::ClearQueue() -> void
 
 auto GUIManager::FlushCommands() -> void
 {
+    // 1. 取 C++ 命令（swap 消费）
     {
         std::lock_guard lock(cmd_mtx_);
         cmd_queue_front_.swap(cmd_queue_back_);
         cmd_queue_back_.clear(); // 清空旧数据，防止命令累积
     }
-    if (cmd_queue_front_.empty())
-        return;
 
-    // 多于 1 条命令时才排序
-    if (cmd_queue_front_.size() > 1) {
-        std::ranges::stable_sort(cmd_queue_front_, std::ranges::less { }, &get_z_order);
+    // 2. 取所有 Worker 帧快照（shared_ptr 拷贝，无深拷贝）
+    std::vector<std::shared_ptr<std::vector<RenderCommand>>> snapshots;
+    {
+        std::lock_guard lock(snapshot_mtx_);
+        snapshots.reserve(worker_snapshots_.size());
+        for (auto& [name, snap] : worker_snapshots_)
+            snapshots.push_back(snap);
     }
 
-    for (const auto& cmd : cmd_queue_front_) {
+    // 3. 合并 C++ 命令 + 所有 Worker 快照
+    std::vector<RenderCommand> merged;
+    {
+        size_t total = cmd_queue_front_.size();
+        for (auto& s : snapshots)
+            total += s->size();
+        merged.reserve(total);
+    }
+    for (auto& s : snapshots) {
+        for (const auto& c : *s)
+            merged.push_back(c);
+    }
+    for (auto& c : cmd_queue_front_)
+        merged.push_back(std::move(c));
+    cmd_queue_front_.clear();
+
+    if (merged.empty())
+        return;
+
+    // 4. 多于 1 条命令时才排序
+    if (merged.size() > 1) {
+        std::ranges::stable_sort(merged, std::ranges::less { }, &get_z_order);
+    }
+
+    // 5. 执行
+    for (const auto& cmd : merged) {
         std::visit([this](const auto& c) -> void {
             using T = std::decay_t<decltype(c)>;
             if constexpr (std::is_same_v<T, CmdSetBackground>) {
@@ -159,7 +200,6 @@ auto GUIManager::FlushCommands() -> void
         },
                    cmd);
     }
-    cmd_queue_front_.clear(); // 执行完毕，清空
 }
 auto GUIManager::SetLogicalSize(int w, int h) -> void
 {

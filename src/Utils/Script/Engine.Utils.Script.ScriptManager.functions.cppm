@@ -45,7 +45,15 @@ auto ScriptManager::SetupMainDMAPI() -> void
 auto ScriptManager::SetupGUILuaAPI() -> void
 {
     auto& state = L.get_state();
-    SetupGUIAPI(state, SGM);
+    SetupGUIAPI(state,
+                [this](RenderCommand cmd) -> void {
+                    if (SGM)
+                        SGM->PushCommand(std::move(cmd));
+                },
+                [this]() -> void {
+                    if (SGM)
+                        SGM->ClearQueue();
+                });
 }
 
 auto ScriptManager::SetupSndLuaAPI() -> void
