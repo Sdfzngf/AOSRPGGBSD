@@ -104,51 +104,43 @@ public:
             return false;
         }
 
-        std::lock_guard lock(workers_mtx);
-        if (Workers.contains(name)) {
-            ::Engine::Utils::Logger::Log(
-                std::string("[ScriptManager] CreateWorker: worker already exists: ") + name,
-                ::Engine::Utils::Logger::LogLevel::ERROR);
-            return false;
+        {
+            std::lock_guard lock(workers_mtx);
+            if (Workers.contains(name)) {
+                ::Engine::Utils::Logger::Log(
+                    std::string("[ScriptManager] CreateWorker: worker already exists: ") + name,
+                    ::Engine::Utils::Logger::LogLevel::ERROR);
+                return false;
+            }
         }
 
+        // 锁外创建 Worker（构造函数会阻塞等待 init_done_）
+        std::shared_ptr<Worker> w;
         try {
-            auto w = std::make_shared<Worker>(
+            w = std::make_shared<Worker>(
                 name,
                 SDM,
                 SGM,
                 MaMa,
                 entry_key,
                 [this](const std::string& child_name, const std::string& child_entry_key) -> std::shared_ptr<Worker> {
-                    // Worker 内 spawn 的回调
-                    std::lock_guard lock2(workers_mtx);
-                    if (Workers.contains(child_name)) {
-                        return nullptr;
-                    }
-                    try {
-                        auto child = std::make_shared<Worker>(
-                            child_name,
-                            SDM,
-                            SGM,
-                            MaMa,
-                            child_entry_key,
-                            [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
-                                return WorkerSpawn(gname, gkey);
-                            });
-                        Workers[child_name] = child;
-                        return child;
-                    } catch (...) {
-                        return nullptr;
-                    }
+                    return WorkerSpawn(child_name, child_entry_key);
                 });
-            Workers[name] = w;
-            return true;
         } catch (const std::exception& e) {
             ::Engine::Utils::Logger::Log(
                 std::string("[ScriptManager] CreateWorker failed: ") + e.what(),
                 ::Engine::Utils::Logger::LogLevel::ERROR);
             return false;
         }
+
+        {
+            std::lock_guard lock(workers_mtx);
+            if (Workers.contains(name)) {
+                return false; // 竞态：其他线程抢先创建了同名 Worker
+            }
+            Workers[name] = w;
+        }
+        return true;
     }
 
     /// 查询 Worker 是否运行中
@@ -182,11 +174,20 @@ public:
     /// 每帧唤醒所有帧模式 Worker
     auto TickFrameWorkers(double dt) -> void
     {
-        std::lock_guard lock(workers_mtx);
-        for (auto& [name, w] : Workers) {
-            if (w->IsFrameMode()) {
-                w->TickFrame(dt);
+        // 先复制列表再释放锁：TickFrame 会阻塞等待 Worker 完成，
+        // 若持锁会导致 Worker 内 spawn_worker 无法获取 workers_mtx 而死锁
+        std::vector<std::shared_ptr<Worker>> ws;
+        {
+            std::lock_guard lock(workers_mtx);
+            ws.reserve(Workers.size());
+            for (auto& [name, w] : Workers) {
+                if (w->IsFrameMode()) {
+                    ws.push_back(w);
+                }
             }
+        }
+        for (auto& w : ws) {
+            w->TickFrame(dt);
         }
     }
 
@@ -236,11 +237,17 @@ private:
     /// Worker 内 spawn 的回调实现
     auto WorkerSpawn(const std::string& name, const std::string& entry_key) -> std::shared_ptr<Worker>
     {
-        if (Workers.contains(name)) {
-            return nullptr;
+        {
+            std::lock_guard lock(workers_mtx);
+            if (Workers.contains(name)) {
+                return nullptr;
+            }
         }
+
+        // 锁外创建（构造函数阻塞等待 init_done_，避免递归 spawn 时死锁）
+        std::shared_ptr<Worker> child;
         try {
-            auto child = std::make_shared<Worker>(
+            child = std::make_shared<Worker>(
                 name,
                 SDM,
                 SGM,
@@ -249,11 +256,18 @@ private:
                 [this](const std::string& gname, const std::string& gkey) -> std::shared_ptr<Worker> {
                     return WorkerSpawn(gname, gkey);
                 });
-            Workers[name] = child;
-            return child;
         } catch (...) {
             return nullptr;
         }
+
+        {
+            std::lock_guard lock(workers_mtx);
+            if (Workers.contains(name)) {
+                return nullptr; // 竞态：同名已存在
+            }
+            Workers[name] = child;
+        }
+        return child;
     }
 };
 
