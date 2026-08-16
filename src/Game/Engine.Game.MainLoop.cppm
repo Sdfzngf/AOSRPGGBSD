@@ -4,9 +4,7 @@
  */
 module;
 
-#include <cmath>
 #include <string>
-#include <sys/time.h>
 #include <vector>
 
 module Engine.Game:MainLoop;

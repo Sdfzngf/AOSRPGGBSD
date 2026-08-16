@@ -1,9 +1,6 @@
 module;
 
-#include <cmath>
-#include <string>
-#include <sys/time.h>
-#include <vector>
+#include <chrono>
 
 export module Engine.Basics.FPS;
 
@@ -14,27 +11,34 @@ import Engine.Utils.Time;
 export namespace Engine::Basics::FPS {
 auto FPS_avg(int cycle_seconds) -> int
 {
-    static struct timeval time_start, time_end;
+    using Clock = std::chrono::steady_clock;
+    using Seconds = std::chrono::seconds;
+
+    static Clock::time_point time_start = Clock::now();
+    static Clock::time_point time_end = time_start;
     static bool init = false;
-    static int count = 0, fps = 0;
+    static int count = 0;
+    static int fps = 0;
+
+    auto now = Clock::now();
 
     if (!init) {
         init = true;
-        gettimeofday(&time_start, nullptr);
-        gettimeofday(&time_end, nullptr);
+        time_start = now;
+        time_end = now;
         return 0;
-    } else {
-        long cycle = time_end.tv_sec - time_start.tv_sec;
-        gettimeofday(&time_end, nullptr);
-        if (cycle == cycle_seconds) {
-            gettimeofday(&time_start, nullptr);
-            fps = count;
-            count = 0;
-            return fps / cycle_seconds;
-        }
-        count++;
+    }
+
+    time_end = now;
+    long cycle = std::chrono::duration_cast<Seconds>(time_end - time_start).count();
+    if (cycle >= cycle_seconds) {
+        time_start = now;
+        fps = count;
+        count = 0;
         return fps / cycle_seconds;
     }
-    return 0;
+
+    ++count;
+    return fps / cycle_seconds;
 }
 }
