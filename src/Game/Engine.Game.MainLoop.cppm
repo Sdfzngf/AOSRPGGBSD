@@ -15,35 +15,9 @@ import Engine.Game;
 import Engine.Utils.Logger;
 import Engine.i18n;
 import Engine.Utils.Time;
+import Engine.Basics.FPS;
 
 using Engine::Utils::Logger::Log;
-
-auto fps_average_count(int cycle_seconds) -> int
-{
-
-    static struct timeval time_start, time_end;
-    static bool init = false;
-    static int count = 0, fps = 0;
-
-    if (!init) {
-        init = true;
-        gettimeofday(&time_start, nullptr);
-        gettimeofday(&time_end, nullptr);
-        return 0;
-    } else {
-        long cycle = time_end.tv_sec - time_start.tv_sec;
-        gettimeofday(&time_end, nullptr);
-        if (cycle == cycle_seconds) {
-            gettimeofday(&time_start, nullptr);
-            fps = count;
-            count = 0;
-            return fps / cycle_seconds;
-        }
-        count++;
-        return fps / cycle_seconds;
-    }
-    return 0;
-}
 
 export namespace Engine {
 auto Engine::Game::MainLoop() -> void
@@ -58,7 +32,7 @@ auto Engine::Game::MainLoop() -> void
     while (Running) {
         prevTime = Engine::Utils::Time::GetAppRunningTime();
 
-        GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}, FPS avg: {}", wW.load(), wH.load(), static_cast<int>(FPS), fps_average_count(1)));
+        GM.load().get()->SetWindowTitle(Engine::i18n::nfmt("Height: {},Width: {}, FPS: {}, FPS avg: {}", wW.load(), wH.load(), static_cast<int>(FPS), Engine::Basics::FPS::FPS_avg(1)));
         //
         GM.load().get()->SetBackgroundM(0, 0, 0, 255, -2147483648);
         GM.load().get()->FillRectM(0, 0, static_cast<float>(wW), static_cast<float>(wH), 100, 100, 100, 100, -2147483647);
@@ -72,7 +46,6 @@ auto Engine::Game::MainLoop() -> void
             GM.load()->TextM(i, "__Engine_Font__@SourceHanSans", 0, c * 30, 255, 255, 255, 255, 255, 0, 0, 255, 20, 3, 0, 0, 0, 999999);
             c++;
         }
-        // GM.load()->DrawSVGM("__Engine_StartUp__@note.svg", 0, 0, 500, 0, 0, 0, 0, 1919810);
 
         if (x < 0) {
             x = 0;

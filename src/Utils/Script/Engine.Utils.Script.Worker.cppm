@@ -29,6 +29,7 @@ import Engine.Utils.Logger;
 import Engine.GUI.GUIManager;
 import Engine.GUI.GUIManager.Cmd;
 import Engine.Sound.SoundManager;
+import Engine.Basics.Thread;
 
 using namespace ::Engine::GUI;
 using json = nlohmann::json;
@@ -54,7 +55,6 @@ public:
     {
         running_.store(true);
         thread_ = std::thread(&Worker::ThreadFunc, this, entry_key);
-
         // 等待 Worker 初始化完毕（进入帧循环或退出）
         while (!init_done_.load()) {
             std::this_thread::yield();
@@ -129,11 +129,13 @@ private:
             LuaState lua;
             lua.OpenLibs();
             SetupLuaAPI(lua);
+            Engine::Basics::Thread::IAmWorker();
+            Engine::Basics::Thread::MyNameIs(name_);
 
             auto entry = dm_->GetEntry(entry_key);
             if (!entry) {
                 Engine::Utils::Logger::Log(
-                    std::string("[Worker ") + name_ + "]: entry not found: " + entry_key,
+                    std::string("entry not found: ") + entry_key,
                     Engine::Utils::Logger::LogLevel::ERROR);
                 running_.store(false);
                 init_done_.store(true);
@@ -158,7 +160,7 @@ private:
             if (!r1.valid()) {
                 sol::error err = r1;
                 Engine::Utils::Logger::Log(
-                    std::string("[Worker ") + name_ + "]: Lua error: " + err.what(),
+                    std::string("Lua error: ") + err.what(),
                     Engine::Utils::Logger::LogLevel::ERROR);
                 running_.store(false);
                 init_done_.store(true);
@@ -197,7 +199,7 @@ private:
                 if (!r2.valid()) {
                     sol::error err = r2;
                     Engine::Utils::Logger::Log(
-                        std::string("[Worker ") + name_ + "]: Lua runtime error: " + err.what(),
+                        std::string("Lua runtime error: ") + err.what(),
                         Engine::Utils::Logger::LogLevel::ERROR);
                     break;
                 }
@@ -207,11 +209,11 @@ private:
             }
         } catch (const std::exception& e) {
             Engine::Utils::Logger::Log(
-                std::string("[Worker ") + name_ + "]: exception: " + e.what(),
+                std::string("exception: ") + e.what(),
                 Engine::Utils::Logger::LogLevel::ERROR);
         } catch (...) {
             Engine::Utils::Logger::Log(
-                std::string("[Worker ") + name_ + "]: unknown exception",
+                std::string("unknown exception"),
                 Engine::Utils::Logger::LogLevel::ERROR);
         }
         // 确保主线程不因 Worker 退出而死锁
@@ -254,9 +256,7 @@ private:
         dm_table.set_function("should_exit", [this]() -> bool { return should_exit_.load(); });
 
         // ── 公共 gui API（命令写入帧内本地缓冲，帧末批量提交）──
-        SetupGUIAPI(state,
-                    [this](RenderCommand cmd) { frame_cmds_.push_back(std::move(cmd)); },
-                    [this]() { frame_cmds_.clear(); });
+        SetupGUIAPI(state, [this](RenderCommand cmd) { frame_cmds_.push_back(std::move(cmd)); }, [this]() { frame_cmds_.clear(); });
         SetUpSndAPI(state, mama_);
 
         // ── sleep_frame ──

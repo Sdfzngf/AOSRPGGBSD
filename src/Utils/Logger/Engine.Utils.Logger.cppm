@@ -14,29 +14,26 @@ export module Engine.Utils.Logger;
 
 import Engine.Utils.Time;
 import Engine.i18n;
+import Engine.Basics.Thread;
 export import Engine.Utils.Logger.LogLevel;
 
 using Engine::i18n::locale;
 
-inline thread_local std::thread::id tid;
-inline thread_local std::string tid_s;
-inline thread_local bool tidinit = false;
-
 // NOLINTBEGIN
 export namespace Engine::Utils::Logger {
 #define _log_pref()                                                                                                                                  \
-    if (!tidinit) {                                                                                                                                  \
-        std::ostringstream oss;                                                                                                                      \
-        tid = std::this_thread::get_id();                                                                                                            \
-        oss << tid;                                                                                                                                  \
-        tid_s = oss.str();                                                                                                                           \
-        tidinit = true;                                                                                                                              \
-    }                                                                                                                                                \
     if (loglevel < Engine::Utils::Logger::CurrentLogLevel.load(std::memory_order_relaxed) && loglevel != Engine::Utils::Logger::LogLevel::SUCCESS) { \
         return 1;                                                                                                                                    \
     }                                                                                                                                                \
     if ((loglevel != Engine::Utils::Logger::LogLevel::NOTIME) && (loglevel != Engine::Utils::Logger::LogLevel::NOTIMEANDLEVEL)) {                    \
-        printf("[%f][%s]", Engine::Utils::Time::GetAppRunningTime(), tid_s.c_str());                                                                 \
+        std::string tname = Basics::Thread::WhatsMyName();                                                                                           \
+        if (tname != "") {                                                                                                                           \
+            tname = std::string("][") + tname;                                                                                                       \
+        }                                                                                                                                            \
+        if (Engine::Basics::Thread::AmIWorker()) {                                                                                                   \
+            tname += "][Worker";                                                                                                                     \
+        }                                                                                                                                            \
+        printf("[%f][%s%s]", Engine::Utils::Time::GetAppRunningTime(), Engine::Basics::Thread::GetTidStr().c_str(), tname.c_str());                  \
     }                                                                                                                                                \
     switch (loglevel) {                                                                                                                              \
     case Engine::Utils::Logger::LogLevel::DEBUG:                                                                                                     \

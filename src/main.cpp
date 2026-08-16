@@ -20,6 +20,7 @@ import Engine.Utils.DevConsole;
 import Engine.i18n;
 import Engine.GUI.OpenCL;
 import Engine.Basics.sha256;
+import Engine.Basics.Thread;
 
 Engine::Game g;
 
@@ -31,6 +32,7 @@ Engine::Game g;
 auto main(int argc, char* argv[]) -> int
 {
     Engine::Utils::Logger::Log("int main()", Engine::Utils::Logger::LogLevel::DEBUG);
+    Engine::Basics::Thread::MyNameIs("Main");
     Engine::Utils::Arg::MArg mp = Engine::Utils::Arg::FormatParam(argc, const_cast<const char**>(argv), nullptr);
     try {
         auto ids = Engine::GUI::OpenCL::GetPlatformIDs();

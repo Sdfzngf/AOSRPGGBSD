@@ -218,6 +218,8 @@ target_sources(AOSRPGGBSD
                 FILES src/Basics/Engine.Basics.sha256.cppm
                 FILES src/Basics/Engine.Basics.TextUtils.cppm
                 FILES src/Basics/Engine.Basics.TextUtils.functions.cppm
+                FILES src/Basics/Engine.Basics.FPS.cppm
+                FILES src/Basics/Engine.Basics.Thread.cppm
 
                 FILES src/Utils/Engine.Utils.Time.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
