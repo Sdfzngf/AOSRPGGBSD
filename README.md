@@ -32,6 +32,6 @@ ninja && ninja BGM && ninja PackRes
 |Logger|[完成]||
 |BGM/SFX播放|[完成]||
 |命令行参数处理|[完成]||
-|长的像OOP的ECS|没头绪||
+|OOP|起步||
 |OpenCL的渲染器|起步||
 |矢量3D渲染|没头绪||
