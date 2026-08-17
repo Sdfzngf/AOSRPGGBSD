@@ -224,6 +224,7 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Engine.Utils.Time.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.cppm
+                FILES src/Utils/Object/Engine.Utils.Object.cppm
 
                 FILES src/i18n/Engine.i18n.cppm
                 FILES src/i18n/Engine.i18n.functions.cppm
