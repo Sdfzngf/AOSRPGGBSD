@@ -6,6 +6,7 @@ module;
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <memory>
@@ -32,6 +33,11 @@ enum class GUIlib : uint8_t {
     _l_SDL = 1
 };
 
+struct KeyStat {
+    std::array<bool, SDL_SCANCODE_COUNT> keyboard {};
+    std::array<bool, 8> mouse {};
+};
+
 class GUIManager {
 private:
     bool init = false;
@@ -52,6 +58,10 @@ private:
     // Worker 帧快照：每个 Worker 独立一个槽，主线程合并渲染（避免多 Worker 互相覆盖）
     std::unordered_map<std::string, std::shared_ptr<std::vector<RenderCommand>>> worker_snapshots_;
     mutable std::mutex snapshot_mtx_;
+
+    // 线程安全的键鼠状态快照
+    KeyStat key_stat_ {};
+    mutable std::mutex key_state_mtx_;
 
 public:
     [[nodiscard]] auto Init(std::string guilib = "SDL") -> int;
@@ -78,6 +88,15 @@ public:
 
     /// 消费全部命令（必须在主线程调用），swap 前后缓冲后按 z_order 排序执行
     auto FlushCommands() -> void;
+
+    /// 获取当前键鼠状态快照（线程安全）
+    [[nodiscard]] auto GetKeyStats() const -> KeyStat;
+
+    /// 直接更新按键状态（线程安全）
+    auto SetKeyPressed(SDL_Scancode scancode, bool pressed) -> void;
+
+    /// 直接更新鼠标按钮状态（线程安全）
+    auto SetMousePressed(Uint8 button, bool pressed) -> void;
 
     // ── 命令队列推送接口（C++ 调用，推入队列由 FlushCommands 消费） ──
 

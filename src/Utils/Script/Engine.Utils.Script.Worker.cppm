@@ -6,6 +6,9 @@
  */
 module;
 
+#include <SDL3/SDL.h>
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -258,6 +261,43 @@ private:
         // ── 公共 gui API（命令写入帧内本地缓冲，帧末批量提交）──
         SetupGUIAPI(state, [this](RenderCommand cmd) { frame_cmds_.push_back(std::move(cmd)); }, [this]() { frame_cmds_.clear(); });
         SetUpSndAPI(state, mama_);
+
+        state.set_function("getkeystats", [this, &state]() -> sol::table {
+            sol::table stats = state.create_table();
+            if (!gm_)
+                return stats;
+
+            const auto snapshot = gm_->GetKeyStats();
+            for (int scancode = 0; scancode < SDL_SCANCODE_COUNT; ++scancode) {
+                const char* name = SDL_GetScancodeName(static_cast<SDL_Scancode>(scancode));
+                if (!name || name[0] == '\0')
+                    continue;
+
+                std::string raw = name;
+                std::string lowered = raw;
+                std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char ch) {
+                    return static_cast<char>(std::tolower(ch));
+                });
+                stats[raw] = snapshot.keyboard[static_cast<size_t>(scancode)];
+                stats[lowered] = snapshot.keyboard[static_cast<size_t>(scancode)];
+            }
+
+            static constexpr std::array<const char*, 8> mouse_names = {
+                "mouse_left",
+                "mouse_middle",
+                "mouse_right",
+                "mouse_x1",
+                "mouse_x2",
+                "mouse_button5",
+                "mouse_button6",
+                "mouse_button7"
+            };
+
+            for (std::size_t i = 0; i < mouse_names.size(); ++i)
+                stats[mouse_names[i]] = snapshot.mouse[i];
+
+            return stats;
+        });
 
         // ── sleep_frame ──
         lua_State* L = state.lua_state();

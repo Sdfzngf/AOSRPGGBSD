@@ -201,6 +201,31 @@ auto GUIManager::FlushCommands() -> void
                    cmd);
     }
 }
+[[nodiscard]] auto GUIManager::GetKeyStats() const -> KeyStat
+{
+    std::lock_guard lock(key_state_mtx_);
+    return key_stat_;
+}
+
+auto GUIManager::SetKeyPressed(SDL_Scancode scancode, bool pressed) -> void
+{
+    if (scancode < SDL_SCANCODE_UNKNOWN || scancode >= SDL_SCANCODE_COUNT)
+        return;
+
+    std::lock_guard lock(key_state_mtx_);
+    key_stat_.keyboard[static_cast<size_t>(scancode)] = pressed;
+}
+
+auto GUIManager::SetMousePressed(Uint8 button, bool pressed) -> void
+{
+    int idx = static_cast<int>(button) - 1;
+    if (idx < 0 || idx >= static_cast<int>(key_stat_.mouse.size()))
+        return;
+
+    std::lock_guard lock(key_state_mtx_);
+    key_stat_.mouse[static_cast<size_t>(idx)] = pressed;
+}
+
 auto GUIManager::SetLogicalSize(int w, int h) -> void
 {
     switch (glb) {
@@ -256,8 +281,18 @@ auto GUIManager::Update(std::atomic<bool>& running) -> void
                         wH->store(hhh);
                     }
                 break;
+            case SDL_EVENT_KEY_DOWN:
+                SetKeyPressed(event.key.scancode, true);
+                break;
+            case SDL_EVENT_KEY_UP:
+                SetKeyPressed(event.key.scancode, false);
+                break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                SetMousePressed(event.button.button, true);
                 MM_.load()->PlaySoundEffect("__Engine_SFX__@end.mp3");
+                break;
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                SetMousePressed(event.button.button, false);
                 break;
             case SDL_EVENT_MOUSE_WHEEL:
                 MM_.load()->StopTrackPlaying("SFX@__Engine_SFX__@end.mp3", 100);
