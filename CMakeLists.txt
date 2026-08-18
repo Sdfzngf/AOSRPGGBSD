@@ -162,9 +162,10 @@ CPMAddPackage(
   NAME OpenCL-CLHPP
   GITHUB_REPOSITORY KhronosGroup/OpenCL-CLHPP
   GIT_TAG v2026.05.29
+        OPTIONS
                 "BUILD_EXAMPLES OFF"
-                "CLHPP_BUILD_TESTS OFF"
                 "BUILD_DOCS OFF"
+                "OPENCL_CLHPP_BUILD_TESTING OFF"
 )
 
 # Lua 5.5 移除了 lua.hpp，C++ 项目需自行提供 extern "C" 包装
@@ -225,6 +226,7 @@ target_sources(AOSRPGGBSD
                 FILES src/Utils/Logger/Engine.Utils.Logger.LogLevel.cppm
                 FILES src/Utils/Logger/Engine.Utils.Logger.cppm
                 FILES src/Utils/Object/Engine.Utils.Object.cppm
+                FILES src/Utils/Object/Engine.Utils.Entity.cppm
 
                 FILES src/i18n/Engine.i18n.cppm
                 FILES src/i18n/Engine.i18n.functions.cppm
