@@ -34,6 +34,7 @@ public:
     std::atomic<uint32_t> Type { 0 }; // 类型
     std::atomic<std::shared_ptr<uint8_t[]>> Data; // 数据
     mutable std::shared_mutex DataMutex; // 锁
+    std::atomic<bool> is_const { false };
     ::Engine::Basics::sha256::sha256id ID;
 
     DataEntry() = default;
@@ -97,6 +98,9 @@ public:
         auto dataPtr = Data.load(std::memory_order_acquire);
         if (!dataPtr) {
             throw std::runtime_error("Engine::Utils::Data::DataEntry::Write(F&& func)::dataPtr: Nullptr");
+        }
+        if (is_const) {
+            throw std::runtime_error("const read err");
         }
         return std::forward<F>(func)(dataPtr);
     }

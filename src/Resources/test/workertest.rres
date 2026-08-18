@@ -1,8 +1,8 @@
 dbname __Engine_Test_Worker__
-add worker.lua --file "worker.lua" Script
-add workertest.lua --file "workertest.lua" Script
-add worker_renderer.lua --file "worker_renderer.lua" Script
-add worker_renderer_2.lua --file "worker_renderer_2.lua" Script
+add worker.lua --file "worker.lua" Script --const
+add workertest.lua --file "workertest.lua" Script --const
+add worker_renderer.lua --file "worker_renderer.lua" Script --const
+add worker_renderer_2.lua --file "worker_renderer_2.lua" Script --const
 
 dbname __Engine_Test_OpenCL__
-add cltest.cl --file "cltest.cl" CLC
+add cltest.cl --file "cltest.cl" CLC --const

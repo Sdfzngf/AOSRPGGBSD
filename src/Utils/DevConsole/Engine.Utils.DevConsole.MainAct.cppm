@@ -143,43 +143,53 @@ void Add(const auto& args, replxx::Replxx& replxx, std::string filename = "") //
     std::shared_ptr<uint8_t[]> dataBuffer;
     uint32_t dataSize = 0;
 
-    if (args.size() >= 4 && (args.at(2) == "--file" || args.at(2) == "-f")) {
-        const std::string& path = args.at(3);
-        if (args.size() >= 5) {
-            type = ParseEntryType(args.at(4));
-        }
+    if (args.size() >= 4) {
+        if (args.at(2) == "--file" || args.at(2) == "-f") {
+            const std::string& path = args.at(3);
+            if (args.size() >= 5) {
+                type = ParseEntryType(args.at(4));
+            }
 
-        dataBuffer = LoadFileBytes(path);
-        if (!dataBuffer && !std::ifstream(path, std::ios::binary)) {
-            replxx.print("%s\n", Engine::i18n::fmt("无法打开文件: {}", path).c_str()); // NOLINT
-            return;
-        }
+            dataBuffer = LoadFileBytes(path);
+            if (!dataBuffer && !std::ifstream(path, std::ios::binary)) {
+                replxx.print("%s\n", Engine::i18n::fmt("无法打开文件: {}", path).c_str()); // NOLINT
+                return;
+            }
 
-        std::ifstream file(path, std::ios::binary);
-        file.seekg(0, std::ios::end);
-        const auto fileSize = file.tellg();
-        if (fileSize < 0) {
-            replxx.print("%s\n", Engine::i18n::fmt("无法读取文件大小: {}", path).c_str()); // NOLINT
-            return;
-        }
-        dataSize = static_cast<uint32_t>(fileSize);
-        if (dataSize == 0) {
-            dataBuffer = std::make_shared<uint8_t[]>(0);
-        }
-    } else {
-        const std::string& dataText = args.at(2);
-        if (args.size() >= 4) {
-            type = ParseEntryType(args.at(3));
-        }
+            std::ifstream file(path, std::ios::binary);
+            file.seekg(0, std::ios::end);
+            const auto fileSize = file.tellg();
+            if (fileSize < 0) {
+                replxx.print("%s\n", Engine::i18n::fmt("无法读取文件大小: {}", path).c_str()); // NOLINT
+                return;
+            }
+            dataSize = static_cast<uint32_t>(fileSize);
+            if (dataSize == 0) {
+                dataBuffer = std::make_shared<uint8_t[]>(0);
+            }
+        } else {
+            const std::string& dataText = args.at(2);
+            if (args.size() >= 4) {
+                type = ParseEntryType(args.at(3));
+            }
 
-        dataSize = static_cast<uint32_t>(dataText.size());
-        dataBuffer = std::make_shared<uint8_t[]>(dataText.size());
-        if (!dataText.empty()) {
-            std::ranges::copy(dataText, dataBuffer.get());
+            dataSize = static_cast<uint32_t>(dataText.size());
+            dataBuffer = std::make_shared<uint8_t[]>(dataText.size());
+            if (!dataText.empty()) {
+                std::ranges::copy(dataText, dataBuffer.get());
+            }
         }
     }
 
     auto entry = std::make_shared<Engine::Utils::Data::DataEntry>(name, dataSize, type, dataBuffer);
+    if (std::any_of(args.begin(), args.end(), [](const std::string& arg) -> bool {
+            if (arg == "--const") {
+                return true;
+            }
+            return false;
+        })) {
+        entry->is_const = true;
+    };
     ddm.InsertEntry(name, entry);
     replxx.print("%s\n", Engine::i18n::fmt("已添加条目: {}", name).c_str()); // NOLINT
 }

@@ -25,11 +25,11 @@ struct DB_Header {
     uint8_t end_flag { 1 }; // 结束标志
 
     /**
-    * @brief 设置头部描述信息。
-    * @param text 描述字符串。
-    * @param size 描述字符串长度。
-    * @param format 是否将剩余字节补零。
-    * @return 0 表示成功；1 表示长度非法或输入为空。
+     * @brief 设置头部描述信息。
+     * @param text 描述字符串。
+     * @param size 描述字符串长度。
+     * @param format 是否将剩余字节补零。
+     * @return 0 表示成功；1 表示长度非法或输入为空。
      */
     auto SetDesc(const char* text, size_t size, bool format = true) -> uint8_t
     {
@@ -56,6 +56,7 @@ struct DB_DataEntry_Header {
     uint8_t NameSize { 0 }; // 名称大小
     uint32_t Size { 0 }; // 大小
     uint32_t Type { 0 }; // 类型
+    bool is_const { false };
     // Data//数据：包含名称与真正的数据
 };
 }
