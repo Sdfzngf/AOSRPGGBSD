@@ -27,5 +27,6 @@ struct MArg {
     bool _test_clhpp { false };
     bool _test_sha256 { false };
     std::vector<std::string> _test_sha256_arg { };
+    bool _opencl_info { false };
 };
 }

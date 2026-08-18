@@ -34,19 +34,6 @@ auto main(int argc, char* argv[]) -> int
     Engine::Utils::Logger::Log("int main()", Engine::Utils::Logger::LogLevel::DEBUG);
     Engine::Basics::Thread::MyNameIs("Main");
     Engine::Utils::Arg::MArg mp = Engine::Utils::Arg::FormatParam(argc, const_cast<const char**>(argv), nullptr);
-    try {
-        auto ids = Engine::GUI::OpenCL::GetPlatformIDs();
-        for (auto& j : ids) {
-            Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
-            auto nis = Engine::GUI::OpenCL::GetAllPlatformInfo(j);
-            for (auto& i : nis) {
-                Engine::Utils::Logger::Log(i, Engine::Utils::Logger::LogLevel::DEBUG);
-            }
-            Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
-        }
-    } catch (...) {
-        Engine::Utils::Logger::Log("Couldn't get OpenCL_Info", Engine::Utils::Logger::LogLevel::DEBUG);
-    }
 
     if (mp._dev_console) {
         return Engine::Utils::DevConsole::MainAct(mp);
@@ -59,6 +46,22 @@ auto main(int argc, char* argv[]) -> int
         return Engine::GUI::OpenCL::_testclhpp();
     } else if (mp._test_sha256) {
         return Engine::Basics::sha256::_test_sha256();
+    } else if (mp._opencl_info) {
+        try {
+            auto ids = Engine::GUI::OpenCL::GetPlatformIDs();
+            for (auto& j : ids) {
+                Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
+                auto nis = Engine::GUI::OpenCL::GetAllPlatformInfo(j);
+                for (auto& i : nis) {
+                    Engine::Utils::Logger::Log(i, Engine::Utils::Logger::LogLevel::DEBUG);
+                }
+                Engine::Utils::Logger::Log("============OpenCL_Info============", Engine::Utils::Logger::LogLevel::DEBUG);
+            }
+            return 0;
+        } catch (...) {
+            Engine::Utils::Logger::Log("Couldn't get OpenCL_Info", Engine::Utils::Logger::LogLevel::DEBUG);
+            return 1;
+        }
     }
     g.StartUp();
     g.MainLoop();
