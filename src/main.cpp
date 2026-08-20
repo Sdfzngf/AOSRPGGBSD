@@ -21,6 +21,7 @@ import Engine.i18n;
 import Engine.GUI.OpenCL;
 import Engine.Basics.sha256;
 import Engine.Basics.Thread;
+import Engine.Basics.Lua.ASTGen;
 
 Engine::Game g;
 
@@ -62,6 +63,9 @@ auto main(int argc, char* argv[]) -> int
             Engine::Utils::Logger::Log("Couldn't get OpenCL_Info", Engine::Utils::Logger::LogLevel::DEBUG);
             return 1;
         }
+    } else if (mp._test_luaastgen) {
+        Engine::Basics::Lua::ASTGen::GenAST();
+        return 0;
     }
     g.StartUp();
     g.MainLoop();
