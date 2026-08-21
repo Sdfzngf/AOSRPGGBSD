@@ -1,15 +1,11 @@
 module;
 
-#include <algorithm>
 #include <cctype>
-#include <cmath>
-#include <cstdlib> // for system()
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
-#include <numbers>
-#include <sstream>
 #include <string>
 #include <vector>
 
@@ -18,7 +14,7 @@ export module Engine.Basics.Lua.ASTGen;
 namespace {
 
 // ---------- 1. Token 定义 ----------
-enum class TokenType {
+enum class TokenType : char {
     IDENTIFIER,
     NUMBER,
     STRING,
@@ -77,21 +73,18 @@ struct Token {
 // ---------- 2. 词法分析器 ----------
 class Lexer {
 public:
-    Lexer(const std::string& src)
-        : source(src)
-        , pos(0)
-        , line(1)
-        , col(1)
+    Lexer(std::string src)
+        : source(std::move(src))
     {
     }
 
-    std::vector<Token> tokenize()
+    auto tokenize() -> std::vector<Token>
     {
         std::vector<Token> tokens;
         while (true) {
             skipWhitespaceAndComments();
             if (pos >= source.size()) {
-                tokens.push_back({ TokenType::END_OF_FILE, "EOF", line, col });
+                tokens.push_back(Token { .type = TokenType::END_OF_FILE, .text = "EOF", .line = line, .column = col });
                 break;
             }
             char c = source[pos];
@@ -110,8 +103,8 @@ public:
 
 private:
     std::string source;
-    size_t pos;
-    int line, col;
+    size_t pos { 0 };
+    int line { 1 }, col { 1 };
 
     void skipWhitespaceAndComments()
     {
@@ -142,7 +135,7 @@ private:
         }
     }
 
-    Token readIdentifier()
+    auto readIdentifier() -> Token
     {
         int startCol = col;
         std::string text;
@@ -152,43 +145,43 @@ private:
             col++;
         }
         if (text == "function")
-            return { TokenType::KEYWORD_FUNCTION, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_FUNCTION, .text = text, .line = line, .column = startCol };
         if (text == "end")
-            return { TokenType::KEYWORD_END, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_END, .text = text, .line = line, .column = startCol };
         if (text == "if")
-            return { TokenType::KEYWORD_IF, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_IF, .text = text, .line = line, .column = startCol };
         if (text == "then")
-            return { TokenType::KEYWORD_THEN, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_THEN, .text = text, .line = line, .column = startCol };
         if (text == "while")
-            return { TokenType::KEYWORD_WHILE, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_WHILE, .text = text, .line = line, .column = startCol };
         if (text == "do")
-            return { TokenType::KEYWORD_DO, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_DO, .text = text, .line = line, .column = startCol };
         if (text == "return")
-            return { TokenType::KEYWORD_RETURN, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_RETURN, .text = text, .line = line, .column = startCol };
         if (text == "and")
-            return { TokenType::KEYWORD_AND, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_AND, .text = text, .line = line, .column = startCol };
         if (text == "or")
-            return { TokenType::KEYWORD_OR, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_OR, .text = text, .line = line, .column = startCol };
         if (text == "not")
-            return { TokenType::KEYWORD_NOT, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_NOT, .text = text, .line = line, .column = startCol };
         if (text == "local")
-            return { TokenType::KEYWORD_LOCAL, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_LOCAL, .text = text, .line = line, .column = startCol };
         if (text == "for")
-            return { TokenType::KEYWORD_FOR, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_FOR, .text = text, .line = line, .column = startCol };
         if (text == "in")
-            return { TokenType::KEYWORD_IN, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_IN, .text = text, .line = line, .column = startCol };
         if (text == "break")
-            return { TokenType::KEYWORD_BREAK, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_BREAK, .text = text, .line = line, .column = startCol };
         if (text == "nil")
-            return { TokenType::KEYWORD_NIL, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_NIL, .text = text, .line = line, .column = startCol };
         if (text == "true")
-            return { TokenType::KEYWORD_TRUE, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_TRUE, .text = text, .line = line, .column = startCol };
         if (text == "false")
-            return { TokenType::KEYWORD_FALSE, text, line, startCol };
-        return { TokenType::IDENTIFIER, text, line, startCol };
+            return Token { .type = TokenType::KEYWORD_FALSE, .text = text, .line = line, .column = startCol };
+        return Token { .type = TokenType::IDENTIFIER, .text = text, .line = line, .column = startCol };
     }
 
-    Token readNumber()
+    auto readNumber() -> Token
     {
         int startCol = col;
         std::string text;
@@ -203,10 +196,10 @@ private:
             pos++;
             col++;
         }
-        return { TokenType::NUMBER, text, line, startCol };
+        return { .type = TokenType::NUMBER, .text = text, .line = line, .column = startCol };
     }
 
-    Token readString()
+    auto readString() -> Token
     {
         int startCol = col;
         char quote = source[pos];
@@ -243,10 +236,10 @@ private:
             pos++;
             col++;
         }
-        return { TokenType::STRING, text, line, startCol };
+        return { .type = TokenType::STRING, .text = text, .line = line, .column = startCol };
     }
 
-    Token readSymbol()
+    auto readSymbol() -> Token
     {
         char c = source[pos];
         int startCol = col;
@@ -257,22 +250,22 @@ private:
             if (c == '=' && next == '=') {
                 pos++;
                 col++;
-                return { TokenType::SYMBOL_EQ, "==", line, startCol };
+                return { .type = TokenType::SYMBOL_EQ, .text = "==", .line = line, .column = startCol };
             }
             if (c == '~' && next == '=') {
                 pos++;
                 col++;
-                return { TokenType::SYMBOL_NE, "~=", line, startCol };
+                return { .type = TokenType::SYMBOL_NE, .text = "~=", .line = line, .column = startCol };
             }
             if (c == '<' && next == '=') {
                 pos++;
                 col++;
-                return { TokenType::SYMBOL_LE, "<=", line, startCol };
+                return { .type = TokenType::SYMBOL_LE, .text = "<=", .line = line, .column = startCol };
             }
             if (c == '>' && next == '=') {
                 pos++;
                 col++;
-                return { TokenType::SYMBOL_GE, ">=", line, startCol };
+                return { .type = TokenType::SYMBOL_GE, .text = ">=", .line = line, .column = startCol };
             }
             if (c == '.' && next == '.') {
                 pos++;
@@ -280,54 +273,54 @@ private:
                 if (pos < source.size() && source[pos] == '.') {
                     pos++;
                     col++;
-                    return { TokenType::SYMBOL_CONCAT, "...", line, startCol };
+                    return { .type = TokenType::SYMBOL_CONCAT, .text = "...", .line = line, .column = startCol };
                 }
-                return { TokenType::SYMBOL_CONCAT, "..", line, startCol };
+                return { .type = TokenType::SYMBOL_CONCAT, .text = "..", .line = line, .column = startCol };
             }
         }
         switch (c) {
         case '(':
-            return { TokenType::SYMBOL_LPAREN, "(", line, startCol };
+            return { .type = TokenType::SYMBOL_LPAREN, .text = "(", .line = line, .column = startCol };
         case ')':
-            return { TokenType::SYMBOL_RPAREN, ")", line, startCol };
+            return { .type = TokenType::SYMBOL_RPAREN, .text = ")", .line = line, .column = startCol };
         case '[':
-            return { TokenType::SYMBOL_LBRACK, "[", line, startCol };
+            return { .type = TokenType::SYMBOL_LBRACK, .text = "[", .line = line, .column = startCol };
         case ']':
-            return { TokenType::SYMBOL_RBRACK, "]", line, startCol };
+            return { .type = TokenType::SYMBOL_RBRACK, .text = "]", .line = line, .column = startCol };
         case '{':
-            return { TokenType::SYMBOL_LCURLY, "{", line, startCol };
+            return { .type = TokenType::SYMBOL_LCURLY, .text = "{", .line = line, .column = startCol };
         case '}':
-            return { TokenType::SYMBOL_RCURLY, "}", line, startCol };
+            return { .type = TokenType::SYMBOL_RCURLY, .text = "}", .line = line, .column = startCol };
         case ',':
-            return { TokenType::SYMBOL_COMMA, ",", line, startCol };
+            return { .type = TokenType::SYMBOL_COMMA, .text = ",", .line = line, .column = startCol };
         case '.':
-            return { TokenType::SYMBOL_DOT, ".", line, startCol };
+            return { .type = TokenType::SYMBOL_DOT, .text = ".", .line = line, .column = startCol };
         case ':':
-            return { TokenType::SYMBOL_COLON, ":", line, startCol };
+            return { .type = TokenType::SYMBOL_COLON, .text = ":", .line = line, .column = startCol };
         case ';':
-            return { TokenType::SYMBOL_SEMICOLON, ";", line, startCol };
+            return { .type = TokenType::SYMBOL_SEMICOLON, .text = ";", .line = line, .column = startCol };
         case '+':
-            return { TokenType::SYMBOL_PLUS, "+", line, startCol };
+            return { .type = TokenType::SYMBOL_PLUS, .text = "+", .line = line, .column = startCol };
         case '-':
-            return { TokenType::SYMBOL_MINUS, "-", line, startCol };
+            return { .type = TokenType::SYMBOL_MINUS, .text = "-", .line = line, .column = startCol };
         case '*':
-            return { TokenType::SYMBOL_STAR, "*", line, startCol };
+            return { .type = TokenType::SYMBOL_STAR, .text = "*", .line = line, .column = startCol };
         case '/':
-            return { TokenType::SYMBOL_SLASH, "/", line, startCol };
+            return { .type = TokenType::SYMBOL_SLASH, .text = "/", .line = line, .column = startCol };
         case '%':
-            return { TokenType::SYMBOL_PERCENT, "%", line, startCol };
+            return { .type = TokenType::SYMBOL_PERCENT, .text = "%", .line = line, .column = startCol };
         case '^':
-            return { TokenType::SYMBOL_CARET, "^", line, startCol };
+            return { .type = TokenType::SYMBOL_CARET, .text = "^", .line = line, .column = startCol };
         case '~':
-            return { TokenType::SYMBOL_TILDE, "~", line, startCol };
+            return { .type = TokenType::SYMBOL_TILDE, .text = "~", .line = line, .column = startCol };
         case '=':
-            return { TokenType::SYMBOL_ASSIGN, "=", line, startCol };
+            return { .type = TokenType::SYMBOL_ASSIGN, .text = "=", .line = line, .column = startCol };
         case '<':
-            return { TokenType::SYMBOL_LT, "<", line, startCol };
+            return { .type = TokenType::SYMBOL_LT, .text = "<", .line = line, .column = startCol };
         case '>':
-            return { TokenType::SYMBOL_GT, ">", line, startCol };
+            return { .type = TokenType::SYMBOL_GT, .text = ">", .line = line, .column = startCol };
         default:
-            return { TokenType::END_OF_FILE, "?", line, startCol };
+            return { .type = TokenType::END_OF_FILE, .text = "?", .line = line, .column = startCol };
         }
     }
 };
@@ -335,24 +328,29 @@ private:
 // ---------- 3. AST 节点 ----------
 struct Expression {
     virtual ~Expression() = default;
-    virtual std::string getType() const = 0;
-    virtual std::string toString() const = 0;
+    Expression() = default;
+    Expression(const Expression&) = default;
+    auto operator=(const Expression&) -> Expression& = default;
+    Expression(Expression&&) = default;
+    auto operator=(Expression&&) -> Expression& = default;
+    [[nodiscard]] virtual auto getType() const -> std::string = 0;
+    [[nodiscard]] virtual auto toString() const -> std::string = 0;
 };
 
 // 字面量
 struct Literal : Expression {
-    enum Type { T_NUMBER,
-                T_STRING,
-                T_BOOLEAN,
-                T_NIL };
+    enum Type : char { T_NUMBER,
+                       T_STRING,
+                       T_BOOLEAN,
+                       T_NIL };
     Type litType;
     std::string value;
-    Literal(Type t, const std::string& v)
+    Literal(Type t, std::string v)
         : litType(t)
-        , value(v)
+        , value(std::move(v))
     {
     }
-    std::string getType() const override
+    [[nodiscard]] auto getType() const -> std::string override
     {
         switch (litType) {
         case T_NUMBER:
@@ -366,7 +364,7 @@ struct Literal : Expression {
         }
         return "Literal";
     }
-    std::string toString() const override
+    [[nodiscard]] auto toString() const -> std::string override
     {
         if (litType == T_STRING) {
             std::string escaped = value;
@@ -383,25 +381,25 @@ struct Literal : Expression {
 
 struct Variable : Expression {
     std::string name;
-    Variable(const std::string& n)
-        : name(n)
+    Variable(std::string n)
+        : name(std::move(n))
     {
     }
-    std::string getType() const override { return "Variable"; }
-    std::string toString() const override { return name; }
+    [[nodiscard]] auto getType() const -> std::string override { return "Variable"; }
+    [[nodiscard]] auto toString() const -> std::string override { return name; }
 };
 
 // 字段访问：expr.field 或 expr["field"]（简化，只支持点号）
 struct FieldAccess : Expression {
     std::unique_ptr<Expression> object;
     std::string field;
-    FieldAccess(std::unique_ptr<Expression> obj, const std::string& f)
+    FieldAccess(std::unique_ptr<Expression> obj, std::string f)
         : object(std::move(obj))
-        , field(f)
+        , field(std::move(f))
     {
     }
-    std::string getType() const override { return "FieldAccess"; }
-    std::string toString() const override
+    [[nodiscard]] auto getType() const -> std::string override { return "FieldAccess"; }
+    [[nodiscard]] auto toString() const -> std::string override
     {
         return object->toString() + "." + field;
     }
@@ -411,8 +409,8 @@ struct FieldAccess : Expression {
 struct TableConstructor : Expression {
     std::vector<std::unique_ptr<Expression>> list; // 列表元素
     std::map<std::string, std::unique_ptr<Expression>> fields; // 键值对（简化，键为字符串）
-    std::string getType() const override { return "Table"; }
-    std::string toString() const override
+    [[nodiscard]] auto getType() const -> std::string override { return "Table"; }
+    [[nodiscard]] auto toString() const -> std::string override
     {
         std::string s = "{";
         for (auto& expr : list) {
@@ -432,14 +430,14 @@ struct BinaryOp : Expression {
     std::string op;
     std::unique_ptr<Expression> left;
     std::unique_ptr<Expression> right;
-    BinaryOp(const std::string& o, std::unique_ptr<Expression> l, std::unique_ptr<Expression> r)
-        : op(o)
+    BinaryOp(std::string o, std::unique_ptr<Expression> l, std::unique_ptr<Expression> r)
+        : op(std::move(o))
         , left(std::move(l))
         , right(std::move(r))
     {
     }
-    std::string getType() const override { return "BinaryOp"; }
-    std::string toString() const override
+    [[nodiscard]] auto getType() const -> std::string override { return "BinaryOp"; }
+    [[nodiscard]] auto toString() const -> std::string override
     {
         return left->toString() + " " + op + " " + right->toString();
     }
@@ -448,13 +446,13 @@ struct BinaryOp : Expression {
 struct UnaryOp : Expression {
     std::string op;
     std::unique_ptr<Expression> operand;
-    UnaryOp(const std::string& o, std::unique_ptr<Expression> expr)
-        : op(o)
+    UnaryOp(std::string o, std::unique_ptr<Expression> expr)
+        : op(std::move(o))
         , operand(std::move(expr))
     {
     }
-    std::string getType() const override { return "UnaryOp"; }
-    std::string toString() const override
+    [[nodiscard]] auto getType() const -> std::string override { return "UnaryOp"; }
+    [[nodiscard]] auto toString() const -> std::string override
     {
         return op + operand->toString();
     }
@@ -464,8 +462,8 @@ struct CallExpr : Expression {
     std::unique_ptr<Expression> callee; // 可以是一个表达式（如字段访问）
     bool isMethodCall = false; // 冒号调用
     std::vector<std::unique_ptr<Expression>> args;
-    std::string getType() const override { return "Call"; }
-    std::string toString() const override
+    [[nodiscard]] auto getType() const -> std::string override { return "Call"; }
+    [[nodiscard]] auto toString() const -> std::string override
     {
         std::string s = callee->toString();
         if (isMethodCall)
@@ -482,38 +480,38 @@ struct CallExpr : Expression {
 };
 
 // ---------- 语句节点 ----------
-struct Statement {
+struct Statement { // NOLINT
     virtual ~Statement() = default;
-    virtual std::string getType() const = 0;
+    [[nodiscard]] virtual auto getType() const -> std::string = 0;
 };
 
 struct Program : Statement {
     std::vector<std::unique_ptr<Statement>> body;
-    std::string getType() const override { return "Program"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "Program"; }
 };
 
 struct FunctionDef : Statement {
     std::string name;
     std::vector<std::string> params;
     std::vector<std::unique_ptr<Statement>> body;
-    std::string getType() const override { return "FunctionDef"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "FunctionDef"; }
 };
 
 struct IfStmt : Statement {
     std::unique_ptr<Expression> condition;
     std::vector<std::unique_ptr<Statement>> thenBody;
-    std::string getType() const override { return "If"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "If"; }
 };
 
 struct WhileStmt : Statement {
     std::unique_ptr<Expression> condition;
     std::vector<std::unique_ptr<Statement>> body;
-    std::string getType() const override { return "While"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "While"; }
 };
 
 struct ReturnStmt : Statement {
     std::unique_ptr<Expression> value;
-    std::string getType() const override { return "Return"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "Return"; }
 };
 
 struct ExpressionStmt : Statement {
@@ -522,19 +520,19 @@ struct ExpressionStmt : Statement {
         : expr(std::move(e))
     {
     }
-    std::string getType() const override { return "ExpressionStmt"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "ExpressionStmt"; }
 };
 
 struct AssignStmt : Statement {
     std::vector<std::string> vars; // 支持多重赋值，这里简化
     std::unique_ptr<Expression> value;
-    std::string getType() const override { return "Assign"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "Assign"; }
 };
 
 struct LocalDecl : Statement {
     std::vector<std::string> vars;
     std::unique_ptr<Expression> init; // 可选初始值
-    std::string getType() const override { return "LocalDecl"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "LocalDecl"; }
 };
 
 struct ForLoop : Statement {
@@ -543,18 +541,18 @@ struct ForLoop : Statement {
     std::unique_ptr<Expression> end;
     std::unique_ptr<Expression> step; // 可选
     std::vector<std::unique_ptr<Statement>> body;
-    std::string getType() const override { return "ForLoop"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "ForLoop"; }
 };
 
 struct ForInLoop : Statement {
     std::vector<std::string> vars;
     std::unique_ptr<Expression> iterable; // 表达式（如 pairs(t)）
     std::vector<std::unique_ptr<Statement>> body;
-    std::string getType() const override { return "ForInLoop"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "ForInLoop"; }
 };
 
 struct BreakStmt : Statement {
-    std::string getType() const override { return "Break"; }
+    [[nodiscard]] auto getType() const -> std::string override { return "Break"; }
 };
 
 // ---------- 4. 语法解析器 ----------
@@ -562,11 +560,10 @@ class Parser {
 public:
     Parser(const std::vector<Token>& tokens)
         : tokens(tokens)
-        , idx(0)
     {
     }
 
-    std::unique_ptr<Program> parseProgram()
+    auto parseProgram() -> std::unique_ptr<Program>
     {
         auto prog = std::make_unique<Program>();
         while (!match(TokenType::END_OF_FILE)) {
@@ -579,11 +576,11 @@ public:
 
 private:
     std::vector<Token> tokens;
-    size_t idx;
+    size_t idx { 0 };
 
-    Token peek() const { return tokens[idx]; }
-    Token advance() { return tokens[idx++]; }
-    bool match(TokenType type)
+    [[nodiscard]] auto peek() const -> Token { return tokens[idx]; }
+    auto advance() -> Token { return tokens[idx++]; }
+    auto match(TokenType type) -> bool
     {
         if (peek().type == type) {
             advance();
@@ -591,7 +588,7 @@ private:
         }
         return false;
     }
-    bool expect(TokenType type)
+    auto expect(TokenType type) -> bool
     {
         if (match(type))
             return true;
@@ -599,7 +596,7 @@ private:
     }
 
     // ---------- 表达式解析（优先级爬升）----------
-    std::unique_ptr<Expression> parseExpression(int minPrec = 0)
+    auto parseExpression(int minPrec = 0) -> std::unique_ptr<Expression>
     {
         auto left = parsePrefix();
         if (!left)
@@ -620,7 +617,7 @@ private:
     }
 
     // 解析基本表达式，并处理后续的点号和冒号（字段访问和调用）
-    std::unique_ptr<Expression> parsePrefix()
+    auto parsePrefix() -> std::unique_ptr<Expression>
     {
         auto expr = parsePrimary();
         if (!expr)
@@ -687,7 +684,7 @@ private:
     }
 
     // 解析原子表达式（字面量、标识符、括号、表构造器）
-    std::unique_ptr<Expression> parsePrimary()
+    auto parsePrimary() -> std::unique_ptr<Expression>
     {
         Token tok = peek();
         if (tok.type == TokenType::NUMBER) {
@@ -726,7 +723,7 @@ private:
     }
 
     // 表构造器
-    std::unique_ptr<Expression> parseTableConstructor()
+    auto parseTableConstructor() -> std::unique_ptr<Expression>
     {
         advance(); // '{'
         auto table = std::make_unique<TableConstructor>();
@@ -754,7 +751,7 @@ private:
         return table;
     }
 
-    bool isBinaryOp(TokenType t)
+    auto isBinaryOp(TokenType t) -> bool
     {
         switch (t) {
         case TokenType::SYMBOL_PLUS:
@@ -778,7 +775,7 @@ private:
         }
     }
 
-    int getPrecedence(TokenType t)
+    auto getPrecedence(TokenType t) -> int
     {
         switch (t) {
         case TokenType::KEYWORD_OR:
@@ -809,7 +806,7 @@ private:
     }
 
     // ---------- 语句解析 ----------
-    std::unique_ptr<Statement> parseStatement()
+    auto parseStatement() -> std::unique_ptr<Statement>
     {
         Token tok = peek();
         if (tok.type == TokenType::KEYWORD_FUNCTION) {
@@ -834,7 +831,7 @@ private:
         return nullptr;
     }
 
-    std::unique_ptr<FunctionDef> parseFunctionDef()
+    auto parseFunctionDef() -> std::unique_ptr<FunctionDef>
     {
         advance(); // function
         auto func = std::make_unique<FunctionDef>();
@@ -857,7 +854,7 @@ private:
         return func;
     }
 
-    std::unique_ptr<Statement> parseLocalDecl()
+    auto parseLocalDecl() -> std::unique_ptr<Statement>
     {
         advance(); // local
         auto decl = std::make_unique<LocalDecl>();
@@ -878,7 +875,7 @@ private:
         return decl;
     }
 
-    std::unique_ptr<Statement> parseAssignmentOrCall()
+    auto parseAssignmentOrCall() -> std::unique_ptr<Statement>
     {
         auto expr = parseExpression();
         if (!expr)
@@ -902,7 +899,7 @@ private:
         }
     }
 
-    std::unique_ptr<IfStmt> parseIf()
+    auto parseIf() -> std::unique_ptr<IfStmt>
     {
         advance(); // if
         auto ifstmt = std::make_unique<IfStmt>();
@@ -917,7 +914,7 @@ private:
         return ifstmt;
     }
 
-    std::unique_ptr<WhileStmt> parseWhile()
+    auto parseWhile() -> std::unique_ptr<WhileStmt>
     {
         advance(); // while
         auto whilestmt = std::make_unique<WhileStmt>();
@@ -932,7 +929,7 @@ private:
         return whilestmt;
     }
 
-    std::unique_ptr<Statement> parseFor()
+    auto parseFor() -> std::unique_ptr<Statement>
     {
         advance(); // for
         // 检测是数值for还是通用for
@@ -981,7 +978,7 @@ private:
         return nullptr;
     }
 
-    std::unique_ptr<ReturnStmt> parseReturn()
+    auto parseReturn() -> std::unique_ptr<ReturnStmt>
     {
         advance(); // return
         auto ret = std::make_unique<ReturnStmt>();
@@ -995,7 +992,7 @@ private:
 // ---------- 5. DOT 导出器 ----------
 class DotExporter {
 public:
-    static void exportToDot(const Program* prog, const std::string& dotFilename)
+    static auto exportToDot(const Program* prog, const std::string& dotFilename) -> void
     {
         std::ofstream file(dotFilename);
         file << "digraph AST {\n";
@@ -1012,7 +1009,7 @@ public:
         file.close();
     }
 
-    static void generatePNG(const std::string& dotFilename, const std::string& pngFilename)
+    static auto generatePNG(const std::string& dotFilename, const std::string& pngFilename) -> void
     {
         std::string cmd = "dot -Tpng " + dotFilename + " -o " + pngFilename;
         int ret = system(cmd.c_str());
@@ -1023,7 +1020,7 @@ public:
     }
 
 private:
-    static std::string escapeLabel(const std::string& s)
+    static auto escapeLabel(const std::string& s) -> std::string
     {
         std::string result = s;
         size_t pos = 0;
@@ -1033,7 +1030,7 @@ private:
         }
         return result;
     }
-    static int exportStatement(std::ofstream& file, const Statement* stmt, int& id)
+    static auto exportStatement(std::ofstream& file, const Statement* stmt, int& id) -> int
     {
         int currentId = id++;
         std::string label;
