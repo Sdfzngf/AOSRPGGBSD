@@ -16,6 +16,7 @@ module;
 #include <memory>
 #include <mutex>
 #include <string>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -69,12 +70,12 @@ auto GUIManager::BindWH(std::atomic<int>* ww, std::atomic<int>* wh) -> void
 
 auto GUIManager::BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> ddmm) -> void
 {
-    DM_ = ddmm;
+    DM_ = std::move(ddmm);
 }
 
 auto GUIManager::BindMM(std::shared_ptr<::Engine::Sound::SoundManager> mm) -> void
 {
-    MM_ = mm;
+    MM_ = std::move(mm);
 }
 
 [[nodiscard]] auto GUIManager::CreateWindow(const std::string& name) -> int
@@ -108,27 +109,27 @@ auto GUIManager::BindMM(std::shared_ptr<::Engine::Sound::SoundManager> mm) -> vo
 
 auto GUIManager::PushCommand(RenderCommand cmd) -> void
 {
-    std::lock_guard lock(cmd_mtx_);
+    std::scoped_lock lock(cmd_mtx_);
     cmd_queue_back_.push_back(std::move(cmd));
 }
 
 auto GUIManager::SetWorkerSnapshot(const std::string& worker_name, std::vector<RenderCommand>&& cmds) -> void
 {
     auto snap = std::make_shared<std::vector<RenderCommand>>(std::move(cmds));
-    std::lock_guard lock(snapshot_mtx_);
+    std::scoped_lock lock(snapshot_mtx_);
     worker_snapshots_[worker_name] = std::move(snap); // 按名字替换快照
 }
 
 auto GUIManager::ClearWorkerSnapshot(const std::string& worker_name) -> void
 {
-    std::lock_guard lock(snapshot_mtx_);
+    std::scoped_lock lock(snapshot_mtx_);
     worker_snapshots_.erase(worker_name);
 }
 
 /// 清空命令队列（不执行）
 auto GUIManager::ClearQueue() -> void
 {
-    std::lock_guard lock(cmd_mtx_);
+    std::scoped_lock lock(cmd_mtx_);
     cmd_queue_front_.clear();
     cmd_queue_back_.clear();
 }
@@ -137,7 +138,7 @@ auto GUIManager::FlushCommands() -> void
 {
     // 1. 取 C++ 命令（swap 消费）
     {
-        std::lock_guard lock(cmd_mtx_);
+        std::scoped_lock lock(cmd_mtx_);
         cmd_queue_front_.swap(cmd_queue_back_);
         cmd_queue_back_.clear(); // 清空旧数据，防止命令累积
     }
@@ -145,7 +146,7 @@ auto GUIManager::FlushCommands() -> void
     // 2. 取所有 Worker 帧快照（shared_ptr 拷贝，无深拷贝）
     std::vector<std::shared_ptr<std::vector<RenderCommand>>> snapshots;
     {
-        std::lock_guard lock(snapshot_mtx_);
+        std::scoped_lock lock(snapshot_mtx_);
         snapshots.reserve(worker_snapshots_.size());
         for (auto& [name, snap] : worker_snapshots_)
             snapshots.push_back(snap);
@@ -203,7 +204,7 @@ auto GUIManager::FlushCommands() -> void
 }
 [[nodiscard]] auto GUIManager::GetKeyStats() const -> KeyStat
 {
-    std::lock_guard lock(key_state_mtx_);
+    std::scoped_lock lock(key_state_mtx_);
     return key_stat_;
 }
 
@@ -212,18 +213,18 @@ auto GUIManager::SetKeyPressed(SDL_Scancode scancode, bool pressed) -> void
     if (scancode < SDL_SCANCODE_UNKNOWN || scancode >= SDL_SCANCODE_COUNT)
         return;
 
-    std::lock_guard lock(key_state_mtx_);
-    key_stat_.keyboard[static_cast<size_t>(scancode)] = pressed;
+    std::scoped_lock lock(key_state_mtx_);
+    key_stat_.keyboard.at(static_cast<size_t>(scancode)) = pressed;
 }
 
 auto GUIManager::SetMousePressed(Uint8 button, bool pressed) -> void
 {
     int idx = static_cast<int>(button) - 1;
-    if (idx < 0 || idx >= static_cast<int>(key_stat_.mouse.size()))
+    if (idx < 0 || std::cmp_greater_equal(idx, static_cast<int>(key_stat_.mouse.size())))
         return;
 
-    std::lock_guard lock(key_state_mtx_);
-    key_stat_.mouse[static_cast<size_t>(idx)] = pressed;
+    std::scoped_lock lock(key_state_mtx_);
+    key_stat_.keyboard.at(static_cast<size_t>(idx)) = pressed; // NOLINT
 }
 
 auto GUIManager::SetLogicalSize(int w, int h) -> void

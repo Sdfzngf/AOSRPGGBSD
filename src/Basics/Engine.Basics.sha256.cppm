@@ -5,6 +5,7 @@ module;
 #include <cstring>
 #include <ios>
 #include <memory>
+#include <utility>
 
 export module Engine.Basics.sha256;
 
@@ -84,7 +85,7 @@ public:
     }
     [[nodiscard]] auto operator[](int index) const -> const char
     {
-        return str_l[index];
+        return str_l.at(index);
     }
 
     [[nodiscard]] auto operator[](int begin, int end) const -> const std::string
@@ -147,7 +148,7 @@ auto sha256(const std::shared_ptr<uint8_t[]>& data, uint32_t size) -> sha256id
 {
     // 1. 消息填充
     uint32_t tmpsz = size;
-    if (tmpsz > max_memblk_sz.load()) {
+    if (std::cmp_greater(tmpsz, max_memblk_sz.load())) {
         tmpsz = max_memblk_sz.load();
     }
     uint64_t bit_len = static_cast<uint64_t>(tmpsz) * 8;
@@ -165,11 +166,11 @@ auto sha256(const std::shared_ptr<uint8_t[]>& data, uint32_t size) -> sha256id
     if (data && tmpsz > 0) {
         std::memcpy(padded.get(), data.get(), tmpsz);
     }
-    padded[tmpsz] = 0x80; // 追加 '1' 位
+    padded[tmpsz] = 0x80; // NOLINT
 
     // 在最后 8 字节以大端序写入原始位长
     for (int i = 0; i < 8; ++i) {
-        padded[total_len - 8 + i] = static_cast<uint8_t>(bit_len >> (56 - 8 * i));
+        padded[total_len - 8 + i] = static_cast<uint8_t>(bit_len >> (56 - 8 * i)); // NOLINT
     }
 
     // 2. 初始化哈希值（大端序）

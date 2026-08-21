@@ -26,7 +26,7 @@ export namespace Engine::GUI::OpenCL {
 const int numElements = 32;
 bool _init { false };
 std::vector<cl::Platform> _clPlatforms { };
-cl::Platform _currentPlatform;
+cl::Platform _currentPlatform; // NOLINT
 
 auto OpenCLEnvInit() -> char
 {
@@ -153,16 +153,16 @@ auto _testclhpp() -> int
         cl_int buildErr = CL_SUCCESS;
         auto buildInfo = vectorAddProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(&buildErr);
         for (auto& pair : buildInfo) {
-            std::cerr << pair.second << std::endl
-                      << std::endl;
+            std::cerr << pair.second << '\n'
+                      << '\n';
         }
 
         return 1;
     }
 
-    typedef struct {
-        int* bar;
-    } Foo;
+    typedef struct { // NOLINT
+        int* bar; // NOLINT
+    } Foo; // NOLINT
 
     // Get and run kernel that initializes the program-scope global
     // A test for kernels that take no arguments
@@ -186,7 +186,7 @@ auto _testclhpp() -> int
     //////////////
     // Traditional cl_mem allocations
 
-    std::vector<int> output(numElements, 0xdeadbeef);
+    std::vector<int> output(numElements, 0xdeadbeef); // NOLINT
     cl::Buffer outputBuffer(output.begin(), output.end(), false);
     cl::Pipe aPipe(sizeof(cl_int), numElements / 2);
 
@@ -227,7 +227,7 @@ auto _testclhpp() -> int
 
     std::cout << "Output:\n";
     for (int i = 1; i < numElements; ++i) {
-        std::cout << "\t" << output[i] << "\n";
+        std::cout << "\t" << output.at(i) << "\n";
     }
     std::cout << "\n\n";
     return 0;

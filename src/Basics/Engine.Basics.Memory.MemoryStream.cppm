@@ -172,7 +172,7 @@ public:
         if constexpr (std::is_same_v<MemoryBlock, T>) {
             memcpy(right.block.get(), buffer.get() + pointer, rightsize);
         } else {
-            memcpy(&right, buffer.get() + pointer, rightsize);
+            memcpy(&right, buffer.get() + pointer, rightsize); // NOLINT
         }
         pointer += rightsize;
         if (pointer == buffersize)

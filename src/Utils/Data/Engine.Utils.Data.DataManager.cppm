@@ -52,11 +52,11 @@ const uint8_t _version = 1;
  * @brief 快照元数据（轻量，供 ListSnapshots 返回）
  *
  */
-struct SnapshotInfo {
+struct SnapshotInfo { // NOLINT
     std::string name; ///< 快照名称
     std::chrono::system_clock::time_point created_at; ///< 创建时间戳
     std::string description; ///< 描述
-    size_t entry_count; ///< 条目数
+    size_t entry_count = 0; ///< 条目数
     std::vector<std::string> keys; ///< 条目 key 列表
 };
 

@@ -14,7 +14,7 @@ export module Engine.Basics.Lua.ASTGen;
 namespace {
 
 // ---------- 1. Token 定义 ----------
-enum class TokenType : char {
+enum class TokenType : uint8_t {
     IDENTIFIER,
     NUMBER,
     STRING,
@@ -87,10 +87,10 @@ public:
                 tokens.push_back(Token { .type = TokenType::END_OF_FILE, .text = "EOF", .line = line, .column = col });
                 break;
             }
-            char c = source[pos];
+            char c = source.at(pos);
             if (isalpha(c) || c == '_') {
                 tokens.push_back(readIdentifier());
-            } else if (isdigit(c) || (c == '.' && pos + 1 < source.size() && isdigit(source[pos + 1]))) {
+            } else if (isdigit(c) || (c == '.' && pos + 1 < source.size() && isdigit(source.at(pos + 1)))) {
                 tokens.push_back(readNumber());
             } else if (c == '"' || c == '\'') {
                 tokens.push_back(readString());
@@ -109,24 +109,24 @@ private:
     void skipWhitespaceAndComments()
     {
         while (pos < source.size()) {
-            if (source[pos] == ' ' || source[pos] == '\t' || source[pos] == '\r') {
-                if (source[pos] == '\n') {
+            if (source.at(pos) == ' ' || source.at(pos) == '\t' || source.at(pos) == '\r') {
+                if (source.at(pos) == '\n') {
                     line++;
                     col = 1;
                 } else
                     col++;
                 pos++;
-            } else if (source[pos] == '\n') {
+            } else if (source.at(pos) == '\n') {
                 line++;
                 col = 1;
                 pos++;
-            } else if (source[pos] == '-' && pos + 1 < source.size() && source[pos + 1] == '-') {
+            } else if (source.at(pos) == '-' && pos + 1 < source.size() && source.at(pos + 1) == '-') {
                 pos += 2;
-                while (pos < source.size() && source[pos] != '\n')
+                while (pos < source.size() && source.at(pos) != '\n')
                     pos++;
-            } else if (source[pos] == '-' && pos + 1 < source.size() && source[pos + 1] == '[' && pos + 2 < source.size() && source[pos + 2] == '[') {
+            } else if (source.at(pos) == '-' && pos + 1 < source.size() && source.at(pos + 1) == '[' && pos + 2 < source.size() && source.at(pos + 2) == '[') {
                 pos += 3;
-                while (pos < source.size() && !(source[pos] == ']' && pos + 1 < source.size() && source[pos + 1] == ']'))
+                while (pos < source.size() && !(source.at(pos) == ']' && pos + 1 < source.size() && source.at(pos + 1) == ']'))
                     pos++;
                 pos += 2;
             } else {
@@ -139,8 +139,8 @@ private:
     {
         int startCol = col;
         std::string text;
-        while (pos < source.size() && (isalnum(source[pos]) || source[pos] == '_')) {
-            text += source[pos];
+        while (pos < source.size() && (isalnum(source.at(pos)) || source.at(pos) == '_')) {
+            text += source.at(pos);
             pos++;
             col++;
         }
@@ -186,13 +186,13 @@ private:
         int startCol = col;
         std::string text;
         bool hasDot = false;
-        while (pos < source.size() && (isdigit(source[pos]) || source[pos] == '.')) {
-            if (source[pos] == '.') {
+        while (pos < source.size() && (isdigit(source.at(pos)) || source.at(pos) == '.')) {
+            if (source.at(pos) == '.') {
                 if (hasDot)
                     break;
                 hasDot = true;
             }
-            text += source[pos];
+            text += source.at(pos);
             pos++;
             col++;
         }
@@ -202,14 +202,14 @@ private:
     auto readString() -> Token
     {
         int startCol = col;
-        char quote = source[pos];
+        char quote = source.at(pos);
         pos++;
         col++;
         std::string text;
-        while (pos < source.size() && source[pos] != quote) {
-            if (source[pos] == '\\' && pos + 1 < source.size()) {
+        while (pos < source.size() && source.at(pos) != quote) {
+            if (source.at(pos) == '\\' && pos + 1 < source.size()) {
                 // 简单处理转义（仅支持常见）
-                char esc = source[pos + 1];
+                char esc = source.at(pos + 1);
                 switch (esc) {
                 case 'n':
                     text += '\n';
@@ -227,7 +227,7 @@ private:
                 pos += 2;
                 col += 2;
             } else {
-                text += source[pos];
+                text += source.at(pos);
                 pos++;
                 col++;
             }
@@ -241,12 +241,12 @@ private:
 
     auto readSymbol() -> Token
     {
-        char c = source[pos];
+        char c = source.at(pos);
         int startCol = col;
         pos++;
         col++;
         if (pos < source.size()) {
-            char next = source[pos];
+            char next = source.at(pos);
             if (c == '=' && next == '=') {
                 pos++;
                 col++;
@@ -270,7 +270,7 @@ private:
             if (c == '.' && next == '.') {
                 pos++;
                 col++;
-                if (pos < source.size() && source[pos] == '.') {
+                if (pos < source.size() && source.at(pos) == '.') {
                     pos++;
                     col++;
                     return { .type = TokenType::SYMBOL_CONCAT, .text = "...", .line = line, .column = startCol };
@@ -339,10 +339,10 @@ struct Expression {
 
 // 字面量
 struct Literal : Expression {
-    enum Type : char { T_NUMBER,
-                       T_STRING,
-                       T_BOOLEAN,
-                       T_NIL };
+    enum class Type : char { T_NUMBER,
+                             T_STRING,
+                             T_BOOLEAN,
+                             T_NIL };
     Type litType;
     std::string value;
     Literal(Type t, std::string v)
@@ -353,20 +353,20 @@ struct Literal : Expression {
     [[nodiscard]] auto getType() const -> std::string override
     {
         switch (litType) {
-        case T_NUMBER:
+        case Type::T_NUMBER:
             return "Number";
-        case T_STRING:
+        case Type::T_STRING:
             return "String";
-        case T_BOOLEAN:
+        case Type::T_BOOLEAN:
             return "Boolean";
-        case T_NIL:
+        case Type::T_NIL:
             return "Nil";
         }
         return "Literal";
     }
     [[nodiscard]] auto toString() const -> std::string override
     {
-        if (litType == T_STRING) {
+        if (litType == Type::T_STRING) {
             std::string escaped = value;
             size_t pos = 0;
             while ((pos = escaped.find('"', pos)) != std::string::npos) {
@@ -578,8 +578,8 @@ private:
     std::vector<Token> tokens;
     size_t idx { 0 };
 
-    [[nodiscard]] auto peek() const -> Token { return tokens[idx]; }
-    auto advance() -> Token { return tokens[idx++]; }
+    [[nodiscard]] auto peek() const -> Token { return tokens.at(idx); }
+    auto advance() -> Token { return tokens.at(idx++); }
     auto match(TokenType type) -> bool
     {
         if (peek().type == type) {
@@ -689,19 +689,19 @@ private:
         Token tok = peek();
         if (tok.type == TokenType::NUMBER) {
             advance();
-            return std::make_unique<Literal>(Literal::T_NUMBER, tok.text);
+            return std::make_unique<Literal>(Literal::Type::T_NUMBER, tok.text);
         } else if (tok.type == TokenType::STRING) {
             advance();
-            return std::make_unique<Literal>(Literal::T_STRING, tok.text);
+            return std::make_unique<Literal>(Literal::Type::T_STRING, tok.text);
         } else if (tok.type == TokenType::KEYWORD_TRUE) {
             advance();
-            return std::make_unique<Literal>(Literal::T_BOOLEAN, "true");
+            return std::make_unique<Literal>(Literal::Type::T_BOOLEAN, "true");
         } else if (tok.type == TokenType::KEYWORD_FALSE) {
             advance();
-            return std::make_unique<Literal>(Literal::T_BOOLEAN, "false");
+            return std::make_unique<Literal>(Literal::Type::T_BOOLEAN, "false");
         } else if (tok.type == TokenType::KEYWORD_NIL) {
             advance();
-            return std::make_unique<Literal>(Literal::T_NIL, "nil");
+            return std::make_unique<Literal>(Literal::Type::T_NIL, "nil");
         } else if (tok.type == TokenType::IDENTIFIER) {
             advance();
             return std::make_unique<Variable>(tok.text);
@@ -729,7 +729,7 @@ private:
         auto table = std::make_unique<TableConstructor>();
         while (peek().type != TokenType::SYMBOL_RCURLY && peek().type != TokenType::END_OF_FILE) {
             // 检测键值对： identifier '=' expr
-            if (peek().type == TokenType::IDENTIFIER && tokens[idx + 1].type == TokenType::SYMBOL_ASSIGN) {
+            if (peek().type == TokenType::IDENTIFIER && tokens.at(idx + 1).type == TokenType::SYMBOL_ASSIGN) {
                 std::string key = advance().text;
                 advance(); // '='
                 auto value = parseExpression();
@@ -1012,7 +1012,7 @@ public:
     static auto generatePNG(const std::string& dotFilename, const std::string& pngFilename) -> void
     {
         std::string cmd = "dot -Tpng " + dotFilename + " -o " + pngFilename;
-        int ret = system(cmd.c_str());
+        int ret = system(cmd.c_str()); // NOLINT
         if (ret == 0)
             std::cout << "图片已生成: " << pngFilename << '\n';
         else

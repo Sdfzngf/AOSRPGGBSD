@@ -34,8 +34,8 @@ enum class GUIlib : uint8_t {
 };
 
 struct KeyStat {
-    std::array<bool, SDL_SCANCODE_COUNT> keyboard {};
-    std::array<bool, 8> mouse {};
+    std::array<bool, SDL_SCANCODE_COUNT> keyboard { };
+    std::array<bool, 8> mouse { };
 };
 
 class GUIManager {
@@ -45,8 +45,8 @@ private:
     std::atomic<std::shared_ptr<SDL_Renderer>> renderer;
     GUIlib glb = GUIlib::_l_nul;
     int lW = -1, lH = -1;
-    std::atomic<int>* wW; // NOLINT
-    std::atomic<int>* wH; // NOLINT
+    std::atomic<int>* wW = nullptr; // NOLINT
+    std::atomic<int>* wH = nullptr; // NOLINT
     std::atomic<std::shared_ptr<Engine::Utils::Data::DataManager>> DM_;
     std::atomic<std::shared_ptr<Engine::Sound::SoundManager>> MM_;
 
@@ -60,7 +60,7 @@ private:
     mutable std::mutex snapshot_mtx_;
 
     // 线程安全的键鼠状态快照
-    KeyStat key_stat_ {};
+    KeyStat key_stat_ { };
     mutable std::mutex key_state_mtx_;
 
 public:

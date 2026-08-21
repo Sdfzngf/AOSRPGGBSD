@@ -449,8 +449,8 @@ public:
 
                     // 将 --file 的相对路径基于 .rres 文件目录解析
                     for (size_t a = 2; a + 1 < args.size(); ++a) {
-                        if ((args[a] == "--file" || args[a] == "-f") && !args[a + 1].empty() && args[a + 1][0] != '/') {
-                            args[a + 1] = (rresDir / args[a + 1]).lexically_normal().string();
+                        if ((args.at(a) == "--file" || args.at(a) == "-f") && !args.at(a + 1).empty() && args.at(a + 1).at(0) != '/') {
+                            args.at(a + 1) = (rresDir / args.at(a + 1)).lexically_normal().string();
                         }
                     }
 

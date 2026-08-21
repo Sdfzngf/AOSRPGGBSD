@@ -111,31 +111,31 @@ auto SoundManager::BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> dm
 
 [[nodiscard]] auto SoundManager::LoadSound(const std::string& resname, const std::string& label) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     return LoadSoundInternal(resname, label);
 }
 
 [[nodiscard]] auto SoundManager::CreateTrack(const std::string& label) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     return CreateTrackInternal(label);
 }
 
 [[nodiscard]] auto SoundManager::PlayTrack(const std::string& label) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     return PlayTrackInternal(label);
 }
 
 [[nodiscard]] auto SoundManager::SetTrackAudio(const std::string& tl, const std::string& al) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     return SetTrackAudioInternal(tl, al);
 }
 
 [[nodiscard]] auto SoundManager::EraseTrack(const std::string& trackname) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     if (tracks.find(trackname) != tracks.end()) {
         tracks.erase(trackname);
         return 0;
@@ -145,7 +145,7 @@ auto SoundManager::BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> dm
 
 [[nodiscard]] auto SoundManager::PlaySoundEffect(const std::string& resname) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
 
     if (audios.find(resname) == audios.end()) {
         int ret = LoadSoundInternal(resname, resname);
@@ -189,7 +189,7 @@ auto SoundManager::BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> dm
 [[nodiscard]] auto SoundManager::GetTrackList() -> std::vector<std::string>
 {
     std::vector<std::string> vec { };
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     vec.resize(tracks.size());
     int c = 0;
     for (auto& i : tracks) {
@@ -201,13 +201,13 @@ auto SoundManager::BindDM(std::shared_ptr<::Engine::Utils::Data::DataManager> dm
 
 [[nodiscard]] auto SoundManager::PlayLoopTrack(const std::string& label, int _c) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     return PlayLoopTrackInternal(label, _c);
 }
 
 [[nodiscard]] auto SoundManager::StopTrackPlaying(const std::string& label, int64_t fade) -> int
 {
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::scoped_lock<std::mutex> lock(mtx_);
     return StopTrackPlayingInternal(label, fade);
 }
 }

@@ -41,7 +41,7 @@ auto Engine::Game::MainLoop() -> void
         std::vector<std::string> list = MM.load()->GetTrackList();
         int c = 0;
         for (auto& i : list) {
-            GM.load()->TextM(i, "__Engine_Font__@SourceHanSans", 0, c * 30, 255, 255, 255, 255, 255, 0, 0, 255, 20, 3, 0, 0, 0, 999999);
+            GM.load()->TextM(i, "__Engine_Font__@SourceHanSans", 0, c * 30, 255, 255, 255, 255, 255, 0, 0, 255, 20, 3, 0, 0, 0, 999999); // NOLINT
             c++;
         }
 
@@ -49,6 +49,7 @@ auto Engine::Game::MainLoop() -> void
             x = 0;
             xr = 1;
         }
+        // NOLINTBEGIN
         if (x + 92 > wW) {
             x = wW - 92;
             xr = -1;
@@ -63,8 +64,8 @@ auto Engine::Game::MainLoop() -> void
         }
         x += deltaTime * xr * 100;
         y += deltaTime * yr * 100;
+        // NOLINTEND
 
-        // 先消费上一帧命令（C++ 本帧 + Worker 上一帧），再唤醒 Worker 开始新帧
         GM.load().get()->FlushCommands();
         SM.load().get()->TickFrameWorkers(deltaTime);
 

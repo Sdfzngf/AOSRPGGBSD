@@ -94,7 +94,7 @@ public:
         if (!frame_mode_.load())
             return;
         {
-            std::lock_guard lock(frame_sync_mtx_);
+            std::scoped_lock lock(frame_sync_mtx_);
             frame_dt_ = dt;
             frame_ready_ = true;
         }
@@ -147,7 +147,7 @@ private:
 
             // 加载脚本并创建协程
             uint32_t sz = entry->GetSize();
-            sol::state_view sv = lua.get_state();
+            sol::state_view sv = lua.get_state(); // NOLINT
             sol::load_result load;
             entry->Read([&](const std::shared_ptr<uint8_t[]>& data) -> void {
                 load = sv.load_buffer(reinterpret_cast<const char*>(data.get()), sz, "script");
@@ -221,7 +221,7 @@ private:
         }
         // 确保主线程不因 Worker 退出而死锁
         {
-            std::lock_guard lock(frame_sync_mtx_);
+            std::scoped_lock lock(frame_sync_mtx_);
             frame_ready_ = false;
             frame_cv_.notify_one();
         }
@@ -249,9 +249,9 @@ private:
                 return sol::lua_nil;
             auto handle = lua.get_state().create_table();
             auto w_ptr = std::make_shared<std::shared_ptr<Worker>>(std::move(worker));
-            handle["join"] = [w_ptr]() -> void { (*w_ptr)->Join(); };
-            handle["is_running"] = [w_ptr]() -> bool { return (*w_ptr)->IsRunning(); };
-            handle["name"] = [w_ptr]() -> std::string { return (*w_ptr)->GetName(); };
+            handle["join"] = [w_ptr]() -> void { (*w_ptr)->Join(); }; // NOLINT
+            handle["is_running"] = [w_ptr]() -> bool { return (*w_ptr)->IsRunning(); }; // NOLINT
+            handle["name"] = [w_ptr]() -> std::string { return (*w_ptr)->GetName(); }; // NOLINT
             return handle;
         });
 
@@ -259,7 +259,7 @@ private:
         dm_table.set_function("should_exit", [this]() -> bool { return should_exit_.load(); });
 
         // ── 公共 gui API（命令写入帧内本地缓冲，帧末批量提交）──
-        SetupGUIAPI(state, [this](RenderCommand cmd) { frame_cmds_.push_back(std::move(cmd)); }, [this]() { frame_cmds_.clear(); });
+        SetupGUIAPI(state, [this](RenderCommand cmd) -> void { frame_cmds_.push_back(std::move(cmd)); }, [this]() -> void { frame_cmds_.clear(); });
         SetUpSndAPI(state, mama_);
 
         state.set_function("getkeystats", [this, &state]() -> sol::table {
@@ -275,11 +275,11 @@ private:
 
                 std::string raw = name;
                 std::string lowered = raw;
-                std::transform(lowered.begin(), lowered.end(), lowered.begin(), [](unsigned char ch) {
+                std::ranges::transform(lowered, lowered.begin(), [](unsigned char ch) -> char {
                     return static_cast<char>(std::tolower(ch));
                 });
-                stats[raw] = snapshot.keyboard[static_cast<size_t>(scancode)];
-                stats[lowered] = snapshot.keyboard[static_cast<size_t>(scancode)];
+                stats[raw] = snapshot.keyboard.at(static_cast<size_t>(scancode)); // NOLINT
+                stats[lowered] = snapshot.keyboard.at(static_cast<size_t>(scancode)); // NOLINT
             }
 
             static constexpr std::array<const char*, 8> mouse_names = {
@@ -294,7 +294,7 @@ private:
             };
 
             for (std::size_t i = 0; i < mouse_names.size(); ++i)
-                stats[mouse_names[i]] = snapshot.mouse[i];
+                stats[mouse_names.at(i)] = snapshot.mouse.at(i); // NOLINT
 
             return stats;
         });
@@ -305,7 +305,7 @@ private:
         lua_pushcclosure(L, SleepFrameCFunc, 1);
         lua_setglobal(L, "sleep_frame");
 
-        state["dm"] = dm_table;
+        state["dm"] = dm_table; // NOLINT
     }
 
     std::string name_;

@@ -30,8 +30,8 @@ export namespace Engine {
 auto Engine::Game::StartUp() -> void
 {
     Log("void Engine::Game::StartUp()");
-
-    // 存入
+    // NOLINTBEGIN
+    //  存入
     DM.store(std::make_shared<Engine::Utils::Data::DataManager>());
     SM.store(std::make_shared<Engine::Utils::Script::ScriptManager>());
     GM.store(std::make_shared<Engine::GUI::GUIManager>());
@@ -45,8 +45,8 @@ auto Engine::Game::StartUp() -> void
     MM.load()->BindDM(DM.load());
     SM.load()->BindSndManager(MM);
     GM.load()->BindMM(MM.load());
-
-    // 国际化
+    // NOLINTEND
+    //  国际化
     std::string myth = Engine::Basics::Random::rand_str(256);
     DM.load()->CreateSnapshotAll(myth);
     DM.load()->MountDB("./Lang/Lang.dat");

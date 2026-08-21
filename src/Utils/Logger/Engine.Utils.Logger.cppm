@@ -6,9 +6,7 @@ module;
 
 #include <atomic>
 #include <iostream>
-#include <sstream>
 #include <string>
-#include <thread>
 
 export module Engine.Utils.Logger;
 

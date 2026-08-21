@@ -105,7 +105,7 @@ public:
         }
 
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             if (Workers.contains(name)) {
                 ::Engine::Utils::Logger::Log(
                     std::string("[ScriptManager] CreateWorker: worker already exists: ") + name,
@@ -134,7 +134,7 @@ public:
         }
 
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             if (Workers.contains(name)) {
                 return false; // 竞态：其他线程抢先创建了同名 Worker
             }
@@ -146,7 +146,7 @@ public:
     /// 查询 Worker 是否运行中
     auto IsWorkerRunning(const std::string& name) -> bool
     {
-        std::lock_guard lock(workers_mtx);
+        std::scoped_lock lock(workers_mtx);
         auto it = Workers.find(name);
         if (it == Workers.end()) {
             return false;
@@ -159,7 +159,7 @@ public:
     {
         std::shared_ptr<Worker> w;
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             auto it = Workers.find(name);
             if (it == Workers.end()) {
                 return;
@@ -178,7 +178,7 @@ public:
         // 若持锁会导致 Worker 内 spawn_worker 无法获取 workers_mtx 而死锁
         std::vector<std::shared_ptr<Worker>> ws;
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             ws.reserve(Workers.size());
             for (auto& [name, w] : Workers) {
                 if (w->IsFrameMode()) {
@@ -196,7 +196,7 @@ public:
     {
         std::vector<std::shared_ptr<Worker>> workers_copy;
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             for (auto& [name, w] : Workers) {
                 workers_copy.push_back(w);
             }
@@ -228,7 +228,7 @@ public:
         }
 
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             Workers.clear();
         }
     }
@@ -238,7 +238,7 @@ private:
     auto WorkerSpawn(const std::string& name, const std::string& entry_key) -> std::shared_ptr<Worker>
     {
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             if (Workers.contains(name)) {
                 return nullptr;
             }
@@ -261,7 +261,7 @@ private:
         }
 
         {
-            std::lock_guard lock(workers_mtx);
+            std::scoped_lock lock(workers_mtx);
             if (Workers.contains(name)) {
                 return nullptr; // 竞态：同名已存在
             }

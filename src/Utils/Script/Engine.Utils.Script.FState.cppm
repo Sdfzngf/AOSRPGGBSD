@@ -6,7 +6,6 @@
  */
 module;
 
-#include <cstdio>
 #include <cstring>
 #include <functional>
 #include <memory>
@@ -45,13 +44,13 @@ inline auto JsonToSol(const json& j, sol::state& state) -> sol::object
         sol::table tbl = state.create_table();
         int idx = 1;
         for (const auto& item : j)
-            tbl[idx++] = JsonToSol(item, state);
+            tbl[idx++] = JsonToSol(item, state); // NOLINT
         return tbl;
     }
     case json::value_t::object: {
         sol::table tbl = state.create_table();
         for (auto it = j.begin(); it != j.end(); ++it)
-            tbl[it.key()] = JsonToSol(it.value(), state);
+            tbl[it.key()] = JsonToSol(it.value(), state); // NOLINT
         return tbl;
     }
     default:
@@ -102,19 +101,19 @@ inline auto SolTableToJson(const sol::table& tbl) -> json
             sol::object val = kv.second;
             switch (val.get_type()) {
             case sol::type::boolean:
-                result[k] = val.as<bool>();
+                result.at(k) = val.as<bool>();
                 break;
             case sol::type::number:
-                result[k] = val.as<double>();
+                result.at(k) = val.as<double>();
                 break;
             case sol::type::string:
-                result[k] = val.as<std::string>();
+                result.at(k) = val.as<std::string>();
                 break;
             case sol::type::table:
-                result[k] = SolTableToJson(val.as<sol::table>());
+                result.at(k) = SolTableToJson(val.as<sol::table>());
                 break;
             case sol::type::nil:
-                result[k] = nullptr;
+                result.at(k) = nullptr;
                 break;
             default:
                 break;
@@ -195,48 +194,48 @@ inline void SetupGUIAPI(sol::state& state,
 
     gui_table.set_function("set_background",
                            [emit](uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
-                                                              emit(CmdSetBackground { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
+                               emit(CmdSetBackground { .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("rect",
                            [emit](float x, float y, float w, float h, uint8_t r, uint8_t g, uint8_t b, uint8_t a, sol::optional<int> z_order) -> void {
-                                                              emit(CmdRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
+                               emit(CmdRect { .x = x, .y = y, .w = w, .h = h, .r = r, .g = g, .b = b, .a = a, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("debug_text",
                            [emit](const std::string& s, float x, float y, uint8_t r, uint8_t g, uint8_t b, uint8_t a, float size, sol::optional<int> z_order) -> void {
-                                                              emit(CmdDebugText { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) });
+                               emit(CmdDebugText { .s = s, .x = x, .y = y, .r = r, .g = g, .b = b, .a = a, .size = size, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("text",
                            [emit](const std::string& te, const std::string& fname,
-                                float _x, float _y,
-                                uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
-                                uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
-                                float _ptsize, int _quality,
-                                double _angle, float _acenter_x, float _acenter_y,
-                                sol::optional<int> z_order) -> void {
-                                                              emit(CmdText { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = z_order.value_or(0) });
+                                  float _x, float _y,
+                                  uint8_t _r, uint8_t _g, uint8_t _b, uint8_t _a,
+                                  uint8_t _br, uint8_t _bg, uint8_t _bb, uint8_t _ba,
+                                  float _ptsize, int _quality,
+                                  double _angle, float _acenter_x, float _acenter_y,
+                                  sol::optional<int> z_order) -> void {
+                               emit(CmdText { .s = te, .font = fname, .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = _a, .br = _br, .bg = _bg, .bb = _bb, .ba = _ba, .size = _ptsize, .quality = _quality, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("draw_svg",
                            [emit](const std::string& _resname, float _x, float _y, int _w, int _h,
-                                float _angle, float _acenter_x, float _acenter_y, sol::optional<int> _z) -> void {
-                                                              emit(CmdDrawSVG { .resname = _resname, .x = _x, .y = _y, .w = _w, .h = _h, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z.value_or(0) });
+                                  float _angle, float _acenter_x, float _acenter_y, sol::optional<int> _z) -> void {
+                               emit(CmdDrawSVG { .resname = _resname, .x = _x, .y = _y, .w = _w, .h = _h, .angle = _angle, .acenter_x = _acenter_x, .acenter_y = _acenter_y, .z_order = _z.value_or(0) });
                            });
 
     gui_table.set_function("set_title",
                            [emit](const std::string& title, sol::optional<int> z_order) -> void {
-                                                              emit(CmdSetTitle { .title = title, .z_order = z_order.value_or(0) });
+                               emit(CmdSetTitle { .title = title, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("set_logical_size",
                            [emit](int w, int h, sol::optional<int> z_order) -> void {
-                                                              emit(CmdSetLogicalSize { .w = w, .h = h, .z_order = z_order.value_or(0) });
+                               emit(CmdSetLogicalSize { .w = w, .h = h, .z_order = z_order.value_or(0) });
                            });
 
     gui_table.set_function("disable_logical_size", [emit]() -> void {
-                CmdDisableLogicalSize cmd { };
+        CmdDisableLogicalSize cmd { };
         emit(cmd);
     });
 
@@ -245,7 +244,7 @@ inline void SetupGUIAPI(sol::state& state,
                                clear();
                            });
 
-    state["gui"] = gui_table;
+    state["gui"] = gui_table; // NOLINT
 }
 
 inline auto SetUpSndAPI(sol::state& state,
@@ -288,7 +287,7 @@ inline auto SetUpSndAPI(sol::state& state,
         return mama->StopTrackPlaying(label, fade);
     });
 
-    state["snd"] = snd_table;
+    state["snd"] = snd_table; // NOLINT
 }
 
 }; // namespace Engine::Utils::Script

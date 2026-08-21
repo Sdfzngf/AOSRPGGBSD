@@ -20,7 +20,7 @@ auto rand_str(int length) -> std::string
     result.reserve(length);
 
     for (int i = 0; i < length; ++i) {
-        result.push_back(chars[dist(gen)]);
+        result.push_back(chars.at(dist(gen)));
     }
     return result;
 }

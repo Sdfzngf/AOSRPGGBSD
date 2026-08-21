@@ -5,12 +5,9 @@
  */
 module;
 
-#include <cstring>
-#include <memory>
 #include <nlohmann/json.hpp>
 #include <sol/inheritance.hpp>
 #include <sol/sol.hpp>
-#include <thread>
 
 module Engine.Utils.Script.ScriptManager:functions;
 
@@ -39,21 +36,17 @@ auto ScriptManager::SetupMainDMAPI() -> void
     // 公共 dm API（read/write/list_keys/getlist）
     SetupDMBaseAPI(dm_table, SDM, state, "Main");
 
-    state["dm"] = dm_table;
+    state["dm"] = dm_table; // NOLINT
 }
 
 auto ScriptManager::SetupGUILuaAPI() -> void
 {
     auto& state = L.get_state();
-    SetupGUIAPI(state,
-                [this](RenderCommand cmd) -> void {
+    SetupGUIAPI(state, [this](RenderCommand cmd) -> void {
                     if (SGM)
-                        SGM->PushCommand(std::move(cmd));
-                },
-                [this]() -> void {
+                        SGM->PushCommand(std::move(cmd)); }, [this]() -> void {
                     if (SGM)
-                        SGM->ClearQueue();
-                });
+                        SGM->ClearQueue(); });
 }
 
 auto ScriptManager::SetupSndLuaAPI() -> void

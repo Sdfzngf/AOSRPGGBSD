@@ -1,13 +1,12 @@
 module;
 
-#include <atomic>
 #include <sstream>
 #include <string>
 #include <thread>
 
 export module Engine.Basics.Thread;
 
-inline thread_local std::string thread_or_worker_name = "";
+inline thread_local std::string thread_or_worker_name = ""; // NOLINT
 inline thread_local std::thread::id tid;
 inline thread_local std::string tid_s;
 inline thread_local bool tidinit = false;
