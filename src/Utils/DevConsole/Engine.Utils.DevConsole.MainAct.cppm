@@ -235,7 +235,7 @@ public:
      * @param mp 解析后的命令行参数。
      * @return 程序退出码。
      */
-    static auto MainAct(const Engine::Utils::Arg::MArg& mp) -> int
+    static auto MainAct(const Engine::Utils::Arg::MArg& mp) -> uint8_t
     {
         Logger::Log("DevConsole::MainAct()", Logger::LogLevel::DEBUG);
 
@@ -409,7 +409,7 @@ public:
         }
         return 0;
     }
-    static auto PackData(const Engine::Utils::Arg::MArg& mp) -> int
+    static auto PackData(const Engine::Utils::Arg::MArg& mp) -> uint8_t
     {
         if (mp._pack) {
             if (mp._pack_arg.size() < 3) {

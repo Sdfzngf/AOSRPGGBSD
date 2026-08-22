@@ -5,6 +5,7 @@
 module;
 
 #include <atomic>
+#include <cstdint>
 #include <iostream>
 #include <string>
 
@@ -67,7 +68,7 @@ export namespace Engine::Utils::Logger {
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-auto Log(std::string content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
+auto Log(std::string content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> uint8_t
 {
     _log_pref();
     printf("%s\033[0m%c", content.c_str(), end);
@@ -82,7 +83,7 @@ auto Log(std::string content, const Engine::Utils::Logger::LogLevel loglevel = E
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-auto Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
+auto Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> uint8_t
 {
     _log_pref();
     printf("%s\033[0m%c", content, end);
@@ -97,7 +98,7 @@ auto Log(const char* content, const Engine::Utils::Logger::LogLevel loglevel = E
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-auto Log(std::pair<std::string, std::string> content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
+auto Log(std::pair<std::string, std::string> content, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> uint8_t
 {
     _log_pref();
     printf("%s: %s\033[0m%c", content.first.c_str(), content.second.c_str(), end);
@@ -112,7 +113,7 @@ auto Log(std::pair<std::string, std::string> content, const Engine::Utils::Logge
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-auto Log(std::string (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
+auto Log(std::string (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> uint8_t
 {
     _log_pref();
     printf("%s\033[0m%c", callcallback().c_str(), end);
@@ -127,7 +128,7 @@ auto Log(std::string (*callcallback)(), const Engine::Utils::Logger::LogLevel lo
  * @param end 结束符，默认为换行符
  * @return int 看心情的返回值
  */
-auto Log(const char* (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
+auto Log(const char* (*callcallback)(), const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> uint8_t
 {
     _log_pref();
     printf("%s\033[0m%c", callcallback(), end);
@@ -143,7 +144,7 @@ auto Log(const char* (*callcallback)(), const Engine::Utils::Logger::LogLevel lo
  * @return int 看心情的返回值
  */
 template <typename T>
-auto Log(T callcallback, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> int
+auto Log(T callcallback, const Engine::Utils::Logger::LogLevel loglevel = Engine::Utils::Logger::LogLevel::DEBUG, char end = '\n') -> uint8_t
 {
     _log_pref();
     std::string msg = callcallback();
@@ -164,7 +165,7 @@ auto LogHex() -> int
  *
  * @return int
  */
-auto _loglevel_test_() -> int
+auto _loglevel_test_() -> uint8_t
 {
     std::cout << Engine::Utils::Time::GetAppRunningTime() << "test\n";
     Log("Ciallo", Engine::Utils::Logger::LogLevel::WTF);
@@ -174,7 +175,7 @@ auto _loglevel_test_() -> int
     Log("ERROR", Engine::Utils::Logger::LogLevel::ERROR);
     Log("CRITICAL", Engine::Utils::Logger::LogLevel::CRITICAL);
     Log("SUCCESS", Engine::Utils::Logger::LogLevel::SUCCESS);
-    return 114514;
+    return 114;
 }
 }
 // NOLINTEND

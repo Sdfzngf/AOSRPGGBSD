@@ -4,6 +4,8 @@
  */
 module;
 
+#include <cstdint>
+
 export module Engine.Utils.DevConsole;
 
 import Engine.Utils.Arg.MArg;
@@ -12,7 +14,7 @@ export namespace Engine::Utils {
 extern const char* helpmsg;
 class DevConsole {
 public:
-    static auto MainAct(const Engine::Utils::Arg::MArg& mp) -> int;
-    static auto PackData(const Engine::Utils::Arg::MArg& mp) -> int;
+    static auto MainAct(const Engine::Utils::Arg::MArg& mp) -> uint8_t;
+    static auto PackData(const Engine::Utils::Arg::MArg& mp) -> uint8_t;
 };
 }
